@@ -1,4 +1,4 @@
-package main
+package ws
 
 type Hub struct {
 	clients map[*Client]bool
