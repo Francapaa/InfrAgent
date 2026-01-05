@@ -20,6 +20,9 @@ func ConnectMongo() {
 	uri := os.Getenv("MONGO_URI")
 	dbName := os.Getenv("MONGO_DB")
 
+	log.Printf("🔍 URI: %s", uri)
+	log.Printf("🔍 DB Name: %s", dbName)
+
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatal("Error conectando a MongoDB:", err)
@@ -34,4 +37,21 @@ func ConnectMongo() {
 	MongoDB = client.Database(dbName)
 
 	log.Println("✅ MongoDB conectado correctamente")
+}
+
+func GetDB() *mongo.Database {
+	return MongoDB
+}
+
+// para cerrar la conexion a la base de datos
+func DisconnectMongo() {
+
+	if MongoClient != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := MongoClient.Disconnect(ctx); err != nil {
+			log.Println("Error desconectando de MongoDB:", err)
+		}
+	}
+
 }

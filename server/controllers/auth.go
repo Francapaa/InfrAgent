@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	models "server/model"
 	"server/service"
@@ -39,7 +40,14 @@ func LoginControllers(c *gin.Context) {
 }
 
 func GoogleLogin(ctx *gin.Context) {
+	fmt.Println("PROVIDER: ", ctx.Param("provider"))
+	provider := ctx.Param("provider")
+	// Inyectamos el provider en el request
+	//ERROR FIXED: Teniamos que inyectar el provider porque gothic no lo estaba encontrando
+	//en la URL
+	ctx.Request.URL.RawQuery = "provider=" + provider
 	gothic.BeginAuthHandler(ctx.Writer, ctx.Request)
+	// ESTA FUNCION OBTIENE EL NOMBRE DEL PROVEDOR
 }
 
 // el c * authController nos permite identificar a q pertenece la funcion

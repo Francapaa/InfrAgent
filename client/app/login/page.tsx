@@ -1,22 +1,44 @@
 "use client"
 
 import { useState } from 'react';
+import {useRouter} from 'next/navigation';
+
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState <string | null>("");
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async  (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Aquí irá tu lógica de autenticación
-    setTimeout(() => setIsLoading(false), 1000);
+    setError("");
+
+    try{
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({email, password}),
+      });
+      const data = await res.json();
+      if(res.ok){
+        router.push('/');
+      }else{
+        setError(data.message);
+      }
+    }catch(error){
+      setError("Error al iniciar sesión");
+    }finally{
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
-    // Aquí irá tu lógica de Google OAuth
-    console.log('Google login clicked');
+    window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`;
   };
 
   return (
@@ -26,7 +48,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo o título */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-yellow-400 mb-2">Botty</h1>
+          <h1 className="text-4xl font-bold text-yellow-400 mb-2">Api Agent</h1>
           <p className="text-gray-400 text-sm">Inicia sesión para guardar el historial de los chats</p>
         </div>
 
