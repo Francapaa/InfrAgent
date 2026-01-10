@@ -6,52 +6,39 @@ import (
 	"os"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 )
 
-var MongoClient *mongo.Client
-var MongoDB *mongo.Database
+var DB *pgxpool.Pool
 
-func ConnectMongo() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func ConnectDatabase() *pgxpool.Pool {
+	err := godotenv.Load()
 
-	uri := os.Getenv("MONGO_URI")
-	dbName := os.Getenv("MONGO_DB")
-
-	log.Printf("🔍 URI: %s", uri)
-	log.Printf("🔍 DB Name: %s", dbName)
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		log.Fatal("Error conectando a MongoDB:", err)
+		log.Fatal("Error cargando la base de datos")
 	}
+	connStr := os.Getenv("DATABASE_URL")
 
-	err = client.Ping(ctx, nil)
+	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
-		log.Fatal("MongoDB no responde:", err)
+		panic(err)
+	}
+	config.MaxConns = 10
+	config.MinConns = 2
+	config.MaxConnLifetime = time.Hour
+
+	db, err := pgxpool.NewWithConfig(context.Background(), config)
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	MongoClient = client
-	MongoDB = client.Database(dbName)
-
-	log.Println("✅ MongoDB conectado correctamente")
-}
-
-func GetDB() *mongo.Database {
-	return MongoDB
-}
-
-// para cerrar la conexion a la base de datos
-func DisconnectMongo() {
-
-	if MongoClient != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := MongoClient.Disconnect(ctx); err != nil {
-			log.Println("Error desconectando de MongoDB:", err)
-		}
+	if err := db.Ping(context.Background()); err != nil {
+		log.Fatal(err)
 	}
 
+	log.Println("Connected with PostgreSQL (Neon)")
+	DB = db
+	return DB
 }

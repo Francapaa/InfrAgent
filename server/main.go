@@ -18,8 +18,8 @@ func main() {
 		log.Fatal("Error cargando .env")
 	}
 
-	database.ConnectMongo()
-	db := database.GetDB()
+	db := database.ConnectDatabase()
+	defer db.Close()
 	utils.NewAuth()
 	repositories.InitUserRepository(db)
 
