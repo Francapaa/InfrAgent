@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"log"
 	"os"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/google"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -49,4 +52,28 @@ func GenerateJWT(userId string) (string, error) {
 		"exp": time.Now().Add(time.Hour * 24).Unix(),
 	})
 	return token.SignedString([]byte(key))
+}
+
+func GenerateAPIKey() (string, error) {
+	bytes := make([]byte, 32)
+
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return "agent_key_" + base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+func WebHookSecret() (string, error) {
+	bytes := make([]byte, 32)
+
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return "web_hook_secret_" + base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+func HashAPIKey(apiKey string) (string, error) {
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(apiKey), bcrypt.DefaultCost)
+
 }
