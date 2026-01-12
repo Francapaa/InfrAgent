@@ -5,14 +5,14 @@ import (
 )
 
 // Client represents a registered user/company
-type User struct {
+type Client struct {
 	ID            string    `json:"id"`
 	Email         string    `json:"email"`
-	Password      string    `json:"password"`
 	CompanyName   string    `json:"company_name"`
 	APIKeyHash    string    `json:"-"` // Never expose in API
 	WebhookSecret string    `json:"-"` // Never expose in API
 	WebhookURL    string    `json:"webhook_url"`
+	GoogleID      string    `json:"google_id,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }

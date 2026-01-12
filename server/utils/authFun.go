@@ -2,7 +2,9 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
+	"fmt"
 	"log"
 	"os"
 
@@ -75,5 +77,27 @@ func WebHookSecret() (string, error) {
 func HashAPIKey(apiKey string) (string, error) {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(apiKey), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("hash api key: %w", err)
+	}
 
+	fmt.Printf("Hashed API KEY: %s", string(hash))
+	return string(hash), nil
 }
+
+func IsValidaAPIKey(apiKey, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(apiKey))
+
+	return err == nil
+}
+
+func CompareHashedAPIKey(a, b string) bool {
+	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+}
+
+/*
+
+ACA ESTAN CONVIVIENDO TODAS LAS FUNCIONES QUE SERAN DE UTILIDAD A LA HORA DEL LOGIN DE LOS USUARIOS
+IN THIS FILE WE HAVE ALL FUNCTION WHICH ARE USED TO CREATE THE SDK IN THE LOGIN
+
+*/

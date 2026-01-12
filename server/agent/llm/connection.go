@@ -2,7 +2,12 @@ package llm
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
+	"strings"
+
+	"server/model"
 
 	"google.golang.org/genai"
 )
@@ -32,25 +37,42 @@ func ConnectionToGeminiLLM(apikey, model string) *GeminiClient {
 
 }
 
-//esta funcion llama a la API de gemini (generando el prompt parseandola y validandolo)
+func (g *GeminiClient) Decide(ctx context.Context, agentCtx *model.AgentContext) (*model.LLMDecision, error) {
+	prompt, err := g.CreatePrompt(ctx, agentCtx)
+	if err != nil {
+		return nil, fmt.Errorf("create prompt: %w", err)
+	}
 
-/*
-	COMO VALIDA? 
-	=> SI LA DECISION QUE TOMA EL LLM ESTA DISPONIBLE DENTRO DE LAS DECISIONES QUE 
-	   PUEDE TOMAR EL AGENTE (ESPERAR, REINICIAR BD O SERVIDOR, NOTIFICAR AL USER)
+	// Simplified placeholder response for now
+	decision := &model.LLMDecision{
+		Action:     "notify",
+		Target:     "",
+		Reasoning:  "Placeholder decision",
+		Confidence: 0.8,
+	}
 
-*/
-func (g * GeminiClient) Decide (ctx context.Context, agentCtx storage.AgentContext)(*storage.LLMDecision, error){
+	return decision, nil
+}
 
-	/*
-	TO-DO: 
-	1) PARSEAR EL PROMPT
-	2) PASARSELO AL LLM
-	3) PARSEAR RESPUESTA
-	4) VER SI LA ACTION ESTA DENTRO DE LAS ACTIONS QUE PUEDE TOMAR EL AGENTE
-	5) RETORNAR LA DECISION TOMADA, LUEGO EL AGENTE VE QUE ACCION PUEDE TOMAR. DONDE? &STORAGE.LLMDECISION.ACTION (LO DEVUELVE EL LLM)
-	
-	*/
+func (g *GeminiClient) CreatePrompt(ctx context.Context, agentCtx *model.AgentContext) (string, error) {
+	var sb strings.Builder
 
+	sb.WriteString("You are an infrastructure monitoring agent. Analyze the following context and decide on an action.\n\n")
 
+	sb.WriteString("Current Events:\n")
+	for _, e := range agentCtx.CurrentEvents {
+		sb.WriteString(fmt.Sprintf("- %s on %s (%s): %v\n", e.Type, e.Service, e.Severity, e.Data))
+	}
+
+	sb.WriteString("\nRecent Actions:\n")
+	for _, a := range agentCtx.RecentActions {
+		sb.WriteString(fmt.Sprintf("- %s on %s: %s (confidence: %.2f)\n", a.Type, a.Target, a.Status, a.Confidence))
+	}
+
+	sb.WriteString(fmt.Sprintf("\nRestart Count Last Hour: %d\n", agentCtx.RestartCountHour))
+	sb.WriteString(fmt.Sprintf("Client Config: Max restarts/hour: %d, Allowed actions: %v\n", agentCtx.ClientConfig.MaxRestartsPerHour, agentCtx.ClientConfig.AllowedActions))
+
+	sb.WriteString("\nRespond with JSON: {\"action\": \"restart|notify|wait|scale\", \"target\": \"api|db|etc\", \"params\": {}, \"reasoning\": \"why\", \"confidence\": 0.0-1.0}\n")
+
+	return sb.String(), nil
 }

@@ -1,4 +1,4 @@
--- Clients table
+-- Initial schema for infrastructure agent system
 CREATE TABLE IF NOT EXISTS clients (
     id UUID PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,

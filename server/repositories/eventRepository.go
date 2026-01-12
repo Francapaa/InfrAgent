@@ -5,72 +5,92 @@ import (
 	"encoding/json"
 	"fmt"
 	models "server/model"
-	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type EventStorage interface {
-	SaveAction(ctx context.Context, action *models.Action) error
-	GetRecentActions(ctx context.Context, agentID string, limit int) ([]models.Action, error)
-	CountActionsSince(ctx context.Context, agentID, actionType string, since time.Time) (int, error)
+var eventRepo *EventRepository
+
+func InitEventRepository(db *pgxpool.Pool) {
+	eventRepo = &EventRepository{DB: db}
 }
 
-func (s *PostgresStorage) SaveAction(ctx context.Context, action *models.Action) error {
+type EventRepository struct {
+	DB *pgxpool.Pool
+}
 
-	paramsJSON, err := json.Marshal(action.Params) // convierte  Go data structures (structs, maps, slices) into a JSON-formatted byte slice (a string representation)
+type EventStorage interface {
+	CreateEvent(ctx context.Context, event *models.Event) error
+	GetPendingEvents(ctx context.Context, agentId string) ([]models.Event, error)
+	MarkEventProcessed(ctx context.Context, eventId string) error
+}
 
+func CreateEvent(ctx context.Context, event *models.Event) error {
+	return eventRepo.CreateEvent(ctx, event)
+}
+
+func (r *EventRepository) CreateEvent(ctx context.Context, event *models.Event) error {
+	dataJSON, err := json.Marshal(event.Data)
 	if err != nil {
-		return fmt.Errorf("marshal result: %w", err)
+		return fmt.Errorf("marshal event data: %w", err)
 	}
 
-	resultJSON, err := json.Marshal(action.Result)
-	if err != nil {
-		return fmt.Errorf("marshal result: %w", err)
-	}
-
-	_, err = s.db.ExecContext(ctx, `
-		INSERT INTO actions (id, agent_id, client_id, type, target, params, reasoning, confidence, status, result, executed_at, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-	`, action.ID, action.AgentID, action.ClientID, action.Type, action.Target, paramsJSON,
-		action.Reasoning, action.Confidence, action.Status, resultJSON, action.ExecutedAt, action.CreatedAt)
-
+	_, err = r.DB.Exec(ctx, `
+		INSERT INTO events (id, client_id, agent_id, type, service, severity, data, processed_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`, event.ID, event.ClientID, event.AgentID, event.Type, event.Service, event.Severity, dataJSON, event.ProcessedAt, event.CreatedAt)
 	return err
 }
 
-// return the recent actions of the AGENT
-func (s *PostgresStorage) GetRecentActions(ctx context.Context, agentId string, limit int) ([]models.Action, err) {
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, agent_id, client_id, type, target, params, reasoning, confidence, status, result, executed_at, created_at
-		FROM actions
-		WHERE agent_id = $1
-		ORDER BY created_at DESC
-		LIMIT $2
-	`, agentId, limit)
+func ReturnGetPendingEvents(ctx context.Context, agentId string) ([]models.Event, error) {
+	return eventRepo.GetPendingEvents(ctx, agentId)
+}
+
+func (r *EventRepository) GetPendingEvents(ctx context.Context, agentId string) ([]models.Event, error) {
+	rows, err := r.DB.Query(ctx, `
+		SELECT id, client_id, agent_id, type, service, severity, data, processed_at, created_at
+		FROM events
+		WHERE agent_id = $1 AND processed_at IS NULL
+		ORDER BY created_at
+		LIMIT 50
+	`, agentId)
+
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
 
-	var actions []models.Action
+	var events []models.Event
 
 	for rows.Next() {
-		var a models.Action
-		var paramsJSON, resultJSON []byte
+		var e models.Event
+		var dataJSON []byte
 
-		err := rows.Scan(&a.ID, &a.AgentID, &a.ClientID, &a.Type, &a.Target, &paramsJSON,
-			&a.Reasoning, &a.Confidence, &a.Status, &resultJSON, &a.ExecutedAt, &a.CreatedAt)
+		err := rows.Scan(&e.ID, &e.ClientID, &e.AgentID, &e.Type, &e.Service, &e.Severity, &dataJSON, &e.ProcessedAt, &e.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
-		json.Unmarshal(paramsJSON, &a.Params)
-		json.Unmarshal(resultJSON, &a.Result)
 
-		actions = append(actions, a)
+		if err := json.Unmarshal(dataJSON, &e.Data); err != nil {
+			return nil, fmt.Errorf("unmarshal event data: %w", err)
+		}
+
+		events = append(events, e)
 	}
 
-	return actions, nil
+	return events, nil
 }
 
-func (s *PostgresStorage) CountActionsSince(ctx context.Context, agentID, actionType string, since time.Time) (int, error) {
+func ReturnMarkEventProcessed(ctx context.Context, eventId string) error {
+	return eventRepo.MarkEventProcessed(ctx, eventId)
+}
 
+func (r *EventRepository) MarkEventProcessed(ctx context.Context, eventId string) error {
+	_, err := r.DB.Exec(ctx, `
+		UPDATE events
+		SET processed_at = NOW()
+		WHERE id = $1
+	`, eventId)
+	return err
 }

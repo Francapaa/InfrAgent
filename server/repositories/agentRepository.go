@@ -10,9 +10,8 @@ import (
 
 type AgentStorage interface {
 	GetAgent(ctx context.Context, id string) (*models.Agent, error)
-	GetAgentByClientId(ctx context.Context, clientId string) (*models.Agent, error)
-	UpdateAgentState(ctx context.Context, id string) error
-	SetAgentCooldown(ctx context.Context, id string, duration time.Duration) error
+	GetAgentById(ctx context.Context, clientId string) (*models.Agent, error)
+	UpdateAgentState(ctx context.Context, id string, state string) error
 }
 
 // QUERY PARA OBTENER EL AGENTE EN ESPECIFICO PARA NUESTRO CLIENTE (LUEGO OPTIMIZAMOS)
@@ -21,12 +20,12 @@ func (s *PostgresStorage) GetAgent(ctx context.Context, id string) (*models.Agen
 
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id , client_id, state, last_tick_at, cooldown_until, created_at, updated_at
-		FROM agents 
+		FROM agents
 		WHERE id = $1
 	`, id).Scan(&a.ID, &a.ClientID, &a.State, &a.LastTickAt, &a.CooldownUntil, &a.CreatedAt, &a.UpdatedAt)
 
-	if err != sql.ErrNoRows {
-		return nil, fmt.Errorf("agent not found with id: " + id)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("agent not found with id: %s ", id)
 	}
 	return &a, nil
 }
@@ -38,12 +37,12 @@ func (s *PostgresStorage) GetAgentByClientId(ctx context.Context, clientId strin
 
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id , client_id, state, last_tick_at, cooldown_until, created_at, updated_at
-		FROM agents 
+		FROM agents
 		WHERE client_id = $1
 	`, clientId).Scan(&a.ID, &a.ClientID, &a.State, &a.LastTickAt, &a.CooldownUntil, &a.CreatedAt, &a.UpdatedAt)
 
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("agent not found with client_id: " + clientId)
+		return nil, fmt.Errorf("agent not found with client_id: %s ", clientId)
 	}
 
 	return &a, nil
