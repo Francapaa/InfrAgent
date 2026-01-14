@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
-	"server/agent/llm"
+	models "server/model"
 	"server/repositories"
+	"server/service/agent/llm" // go importa por path del modulo + carpetas
+	service "server/service/exec"
+	"time"
 )
 
 // ACA VA A ESTAR TODA LA LOGICA RELACIONADA AL AGENTE, EL WORKFLOW PRINCIPAL VA A ESTAR ALMACENADO EN ESTE
@@ -11,34 +14,55 @@ import (
 
 type AgentEngine struct {
 	gemini  *llm.GeminiClient
-	events  *repositories.EventRepository
+	events  repositories.EventRepository
 	actions repositories.ActionStorage
-	agents  *repositories.AgentStorage
+	agents  repositories.AgentStorage
+	client  repositories.ClientStorage
+}
+
+func (e *AgentEngine) assembleContext(ctx context.Context, agent *models.Agent, events []models.Event) models.AgentRunContext {
+
+	since := time.Now().Add(-1 * time.Hour)
+	restartCount, _ := e.actions.CountActionsSince(context.Background(), agent.ID, "restart", since)
+
+	return models.AgentRunContext{
+		CurrentEvents:    events,
+		RestartCountHour: restartCount,
+		ClientConfig:     models.ClientConfig{},
+	}
+
 }
 
 func (e *AgentEngine) RunTick(ctx context.Context, agentId string) error {
-	agent, _ := e.agents.GetAgent(ctx, agentId)
-	events, _ := e.events.ReturnGetPendingEvents(ctx, agentId)
+	agent, _ := e.agents.GetAgent(ctx, agentId)          // aca le damos el estado al agente
+	events, _ := e.events.GetPendingEvents(ctx, agentId) // aca cargamos los eventos pendientes que tenga
+	client, _ := e.client.GetClient(ctx, agent.ClientID)
 
 	if len(events) == 0 {
 		return nil
 	}
 
-	runCtx := e.assembleContext(agent, events)
+	runCtx := models.AgentRunContext{
+		CurrentEvents:    events,
+		RestartCountHour: 0,
+		ClientConfig:     models.ClientConfig{},
+	}
 
-	decision, err := e.gemin.Decide(ctx, runCtx)
+	decision, err := e.gemini.Decide(ctx, runCtx)
 
 	if err != nil {
-		return nil
+		return err
 	}
 
-	result := e.executor.Execute(decision)
-
-	e.actions.SaveAction(ctx, result)
+	executor := &service.Executor{}
+	result := executor.Execute(ctx, decision, agent, client) // en execute tiene que ir algun switch con las opciones
+	e.actions.SaveAction(ctx, result)                        // guardar esa accion en la base de datos
 
 	for _, ev := range events {
-		e.events.MarkEventProcessed(ctx, ev.id)
+		e.events.MarkEventProcessed(ctx, ev.ID) // marcamos el evento como procesado
 	}
+
+	//settear nuevo CD
 
 	return nil
 }

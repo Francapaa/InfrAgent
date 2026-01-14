@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	models "server/model"
@@ -11,12 +12,6 @@ import (
 	"github.com/markbates/goth"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var repo *repositories.UserRepository
-
-func initService(userRepo *repositories.UserRepository) {
-	repo = userRepo
-}
 
 func LoginLocal(email, password string) (string, error) {
 	if email == "" || password == "" {
@@ -29,7 +24,7 @@ func LoginLocal(email, password string) (string, error) {
 		return "", errors.New("El email debe contener '@' ")
 	}
 
-	user, err := repo.FindUserByEmail(email)
+	user, err := repositories.ClientStorage.FindUserByEmail(context.Context, email)
 	if err != nil {
 		return "", errors.New("Email no registrado")
 	}
@@ -54,10 +49,10 @@ func LoginLocal(email, password string) (string, error) {
 func LoginWithGoogle(gothUser goth.User) (string, error) {
 
 	fmt.Println("Entro al login with google SERVICE")
-	existingUser, err := repo.FindUserByEmail(gothUser.Email)
+	existingUser, err := repositories.ClientStorage.GetClientByEmail(context.Context, gothUser.Email)
 
 	if err != nil {
-		newUser := models.UserRegister{
+		newUser := models.Client{
 			Nombre:   gothUser.Name,
 			Email:    gothUser.Email,
 			GoogleID: gothUser.UserID,

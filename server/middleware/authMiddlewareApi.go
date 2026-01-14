@@ -2,12 +2,17 @@ package middleware
 
 import (
 	"net/http"
+	"server/repositories"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-func authMiddlewareApi() gin.HandlerFunc {
+type Middleware struct {
+	client repositories.ClientStorage
+}
+
+func (m *Middleware) authMiddlewareApi() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -27,7 +32,7 @@ func authMiddlewareApi() gin.HandlerFunc {
 		}
 		apiKey := parts[1]
 
-		client, err := api.storage.GetClientByAPIKey(c.Request.Context(), apiKey)
+		client, err := m.client.GetClientByAPIKey(c.Request.Context(), apiKey)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key"})
 			c.Abort()

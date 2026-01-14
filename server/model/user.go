@@ -7,12 +7,15 @@ import (
 // Client represents a registered user/company
 type Client struct {
 	ID            string    `json:"id"`
+	Nombre        string    `json:"nombre"`
 	Email         string    `json:"email"`
+	Password      string    `json:"password"`
 	CompanyName   string    `json:"company_name"`
-	APIKeyHash    string    `json:"-"` // Never expose in API
-	WebhookSecret string    `json:"-"` // Never expose in API
-	WebhookURL    string    `json:"webhook_url"`
+	Metodo        string    `json:"metodo"` // este "metodo" nos dice si inicio con google id o LOCAL
 	GoogleID      string    `json:"google_id,omitempty"`
+	APIKeyHash    string    `json:"-"`
+	WebhookSecret string    `json:"-"`
+	WebhookURL    string    `json:"webhook_url"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
@@ -21,20 +24,6 @@ type LoginResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Token   string `json:"token"`
-}
-
-// ClientRegistration is used when creating a new client
-type ClientRegistration struct {
-	Email       string `json:"email"`
-	CompanyName string `json:"company_name"`
-	WebhookURL  string `json:"webhook_url"`
-}
-
-// ClientCredentials are returned only once during registration
-type ClientCredentials struct {
-	ClientID      string `json:"client_id"`
-	APIKey        string `json:"api_key"`        // Plain text, only shown once
-	WebhookSecret string `json:"webhook_secret"` // Plain text, only shown once
 }
 
 // Agent represents an autonomous agent managing a client's infrastructure
@@ -101,6 +90,14 @@ type AgentContext struct {
 	HistoricalPatterns []string          `json:"historical_patterns,omitempty"` // Future: ML insights
 }
 
+type AgentRunContext struct {
+	CurrentEvents    []Event
+	RecentActions    []Action
+	RestartCountHour int
+	ServiceHealth    map[string]string
+	ClientConfig     ClientConfig
+}
+
 // ClientConfig represents the rules and limits for this client
 type ClientConfig struct {
 	MaxRestartsPerHour int      `json:"max_restarts_per_hour"`
@@ -110,6 +107,7 @@ type ClientConfig struct {
 }
 
 // LLMDecision represents the decision made by the LLM
+// PENSAR: LLM DECISION PERTENECE A UN AGENTE? O COMO IDENTIFICAMOS ESA DECISION
 type LLMDecision struct {
 	Action       string                 `json:"action"`
 	Target       string                 `json:"target"`
