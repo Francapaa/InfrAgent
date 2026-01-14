@@ -12,6 +12,7 @@ type AgentStorage interface {
 	GetAgent(ctx context.Context, id string) (*models.Agent, error)
 	GetAgentById(ctx context.Context, clientId string) (*models.Agent, error)
 	UpdateAgentState(ctx context.Context, id string, state string) error
+	GetAgentByApiKey(ctx context.Context, apiKey string) (*models.Agent, error)
 }
 
 // QUERY PARA OBTENER EL AGENTE EN ESPECIFICO PARA NUESTRO CLIENTE (LUEGO OPTIMIZAMOS)
@@ -74,4 +75,21 @@ func (s *PostgresStorage) SetAgentCooldown(ctx context.Context, id string, durat
 	`, coolDownUntil, id)
 
 	return err
+}
+
+func (s *PostgresStorage) GetAgentByApiKey(ctx context.Context, apiKey string) (*models.Agent, error) {
+	var a models.Agent
+
+	err := s.db.QueryRowContext(ctx, `
+		SELECT 	c.api_key_hash,c.id, i,a.id , a.client_id, a.state, a.last_tick_at, a.cooldown_until, a.created_at, a.updated_at
+		JOIN clients ON c.id = a.client_id
+		WHERE c.api_key_hash = $1
+		LIMIT = 1
+	`, apiKey).Scan(&a.ID, &a.ClientID, &a.State, &a.LastTickAt, &a.CooldownUntil, &a.CreatedAt, &a.UpdatedAt)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("agent not found with client_id: %s ", apiKey)
+	}
+
+	return &a, nil
 }
