@@ -21,9 +21,11 @@ type Client struct {
 }
 
 type LoginResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Token   string `json:"token"`
+	Success       bool   `json:"success"`
+	Message       string `json:"message"`
+	Token         string `json:"token"`
+	WebHookSecret string `json:"-"` //estos dos valores (webHooksecret y apiKey) se lo damos en txt plano
+	ApiKey        string `json:"-"`
 }
 
 // Agent represents an autonomous agent managing a client's infrastructure

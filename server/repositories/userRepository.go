@@ -3,10 +3,13 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	models "server/model"
 	"server/utils"
 )
+
+var ErrUserNotFound = errors.New("user not found")
 
 type ClientStorage interface {
 	// Client operations
@@ -37,6 +40,7 @@ func (s *PostgresStorage) CreateClient(ctx context.Context, user *models.Client)
 func (s *PostgresStorage) GetClient(ctx context.Context, id string) (*models.Client, error) {
 
 	var c models.Client
+	var ErrUserNotFound = errors.New("user not found")
 
 	err := s.db.QueryRowContext(ctx, `
 	SELECT id, email, password, company_name, api_key_hash, web_hook_secret, web_hook_url, created_at, updated_at
@@ -45,7 +49,7 @@ func (s *PostgresStorage) GetClient(ctx context.Context, id string) (*models.Cli
 `, id).Scan(&c.ID, &c.Email, &c.CompanyName, &c.APIKeyHash, &c.WebhookSecret, &c.WebhookURL, &c.CreatedAt, &c.UpdatedAt)
 
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("NO EXISTE ESE ID / DOESNT EXIST THESE ID")
+		return nil, ErrUserNotFound
 	}
 	return &c, nil
 }
@@ -78,6 +82,7 @@ func (s *PostgresStorage) GetClientByAPIKey(ctx context.Context, APIKey string) 
 func (s *PostgresStorage) GetClientByEmail(ctx context.Context, email string) (*models.Client, error) {
 
 	var c models.Client
+	var ErrUserNotFound = errors.New("user not found")
 
 	err := s.db.QueryRowContext(ctx, `
 	SELECT id, email, password, company_name, api_key_hash, web_hook_secret, web_hook_url, created_at, updated_at
@@ -86,7 +91,7 @@ func (s *PostgresStorage) GetClientByEmail(ctx context.Context, email string) (*
 `, email).Scan(&c.ID, &c.Email, &c.CompanyName, &c.APIKeyHash, &c.WebhookSecret, &c.WebhookURL, &c.CreatedAt, &c.UpdatedAt)
 
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("NO EXISTE ESE EMAIL / DOESNT EXIST THESE EMAIL")
+		return nil, ErrUserNotFound
 	}
 	return &c, nil
 

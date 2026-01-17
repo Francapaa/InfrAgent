@@ -2,9 +2,10 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
-	"fmt"
+	"encoding/hex"
 	"log"
 	"os"
 
@@ -71,18 +72,13 @@ func WebHookSecret() (string, error) {
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
-	return "web_hook_secret_" + base64.URLEncoding.EncodeToString(bytes), nil
+	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
-func HashAPIKey(apiKey string) (string, error) {
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(apiKey), bcrypt.DefaultCost)
-	if err != nil {
-		return "", fmt.Errorf("hash api key: %w", err)
-	}
-
-	fmt.Printf("Hashed API KEY: %s", string(hash))
-	return string(hash), nil
+func HashAPIKey(apiKey string) string {
+	h := sha256.New()
+	h.Write([]byte(apiKey))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func IsValidaAPIKey(apiKey, hash string) bool {
@@ -93,6 +89,14 @@ func IsValidaAPIKey(apiKey, hash string) bool {
 
 func CompareHashedAPIKey(a, b string) bool {
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+}
+
+func HashPassword(password string) (string, error) {
+	passwordHashed, err := bcrypt.GenerateFromPassword([]byte(password), 256)
+	if err != nil {
+		return "", err
+	}
+	return string(passwordHashed), nil
 }
 
 /*

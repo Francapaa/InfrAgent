@@ -43,7 +43,7 @@ func (lc *LoginController) LoginControllers(c *gin.Context) {
 	})
 }
 
-func GoogleLogin(ctx *gin.Context) {
+func (lc *LoginController) GoogleLogin(ctx *gin.Context) {
 	fmt.Println("PROVIDER: ", ctx.Param("provider"))
 	provider := ctx.Param("provider")
 	// Inyectamos el provider en el request
@@ -69,4 +69,34 @@ func (lc *LoginController) GetAuthCallBackFunction(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(200, gin.H{"Token": token})
+}
+
+// registro de manera local
+func (lc *LoginController) LocalRegister(ctx *gin.Context) {
+
+	var user models.ClientRegister
+
+	if err := ctx.ShouldBindJSON(&user); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"Success": false,
+			"Message": "Datos faltantes o invalidos" + err.Error(),
+		})
+		return
+	}
+
+	response, err := lc.service.Register(user)
+
+	if err != nil {
+		ctx.JSON(500, gin.H{"Error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.LoginResponse{
+		Success:       true,
+		Message:       "Todo ok, todo perfecto",
+		Token:         response.Token,
+		WebHookSecret: response.WebHookSecret,
+		ApiKey:        response.ApiKey,
+	})
+
 }

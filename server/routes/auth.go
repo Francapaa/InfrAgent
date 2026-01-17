@@ -6,11 +6,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetUpRoutes(router *gin.Engine) {
+type SetUpRoutes struct {
+	controllers controllers.LoginController
+}
 
-	router.POST("/login", controllers.LoginControllers)
-	// router.POST("/register", controllers.RegisterController)
-	router.GET("/auth/:provider/callback", controllers.GetAuthCallBackFunction)
-	router.GET("/auth/:provider", controllers.GoogleLogin)
+func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
+
+	router.POST("/login", sp.controllers.LoginControllers)
+	router.POST("/register", sp.controllers.LocalRegister)
+	router.GET("/auth/:provider/callback", sp.controllers.GetAuthCallBackFunction)
+	router.GET("/auth/:provider", sp.controllers.GoogleLogin)
 	// router.DELETE("/logout", controllers.Logout)
 }

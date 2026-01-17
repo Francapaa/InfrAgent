@@ -13,7 +13,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func LoginLocal(email, password string) (string, error) {
+type Login struct {
+	client repositories.ClientStorage
+}
+
+func (l *Login) LoginLocal(email, password string) (string, error) {
 	if email == "" || password == "" {
 		return "", errors.New("Email y password son requeridos")
 	}
@@ -24,7 +28,9 @@ func LoginLocal(email, password string) (string, error) {
 		return "", errors.New("El email debe contener '@' ")
 	}
 
-	user, err := repositories.ClientStorage.FindUserByEmail(context.Context, email)
+	ctx := context.Background()
+
+	user, err := l.client.GetClientByEmail(ctx, email)
 	if err != nil {
 		return "", errors.New("Email no registrado")
 	}
@@ -38,7 +44,7 @@ func LoginLocal(email, password string) (string, error) {
 		return "", errors.New("Contraseña incorrecta.")
 	}
 
-	token, err := utils.GenerateJWT(user.ID.Hex()) //UNCION QUE GENERA JWT EN /UTILS
+	token, err := utils.GenerateJWT(user.ID) //FUNCION QUE GENERA JWT EN /UTILS
 	if err != nil {
 		return "", errors.New("Error al generar el token" + err.Error())
 	}
@@ -46,27 +52,35 @@ func LoginLocal(email, password string) (string, error) {
 	return token, nil
 }
 
-func LoginWithGoogle(gothUser goth.User) (string, error) {
+func (l *Login) LoginWithGoogle(gothUser goth.User) (string, error) {
+
+	ctx := context.Background()
 
 	fmt.Println("Entro al login with google SERVICE")
-	existingUser, err := repositories.ClientStorage.GetClientByEmail(context.Context, gothUser.Email)
+	existingUser, err := l.client.GetClientByEmail(ctx, gothUser.Email)
 
 	if err != nil {
-		newUser := models.Client{
+		newUser := &models.Client{
 			Nombre:   gothUser.Name,
 			Email:    gothUser.Email,
 			GoogleID: gothUser.UserID,
 			Metodo:   "google",
 			Password: "",
 		}
-		err = repo.CreateUser(newUser)
+		apiKeyDeUsuario, err := utils.GenerateAPIKey()
+		apiKeyHashed := utils.HashAPIKey(apiKeyDeUsuario)
+		// METODOS PARA PODER CREAR LA API KEY PARA CADA USUARIO
+		newUser.APIKeyHash = apiKeyHashed
+		newUser.WebhookSecret, err = utils.WebHookSecret()
+		err = l.client.CreateClient(ctx, newUser)
 		if err != nil {
 			return "", errors.New("Error al crear el usuario")
 		}
-		token, err := utils.GenerateJWT(newUser.ID.Hex())
+		token, err := utils.GenerateJWT(newUser.ID)
 		if err != nil {
 			return "", errors.New("Error al generar el token" + err.Error())
 		}
+		//aca deberiamos devolver el usuario
 		return token, nil
 	}
 
@@ -74,13 +88,13 @@ func LoginWithGoogle(gothUser goth.User) (string, error) {
 		existingUser.Metodo = "google"
 		existingUser.GoogleID = gothUser.UserID
 
-		err = repo.UpdateUser(*existingUser)
+		err = l.client.UpdateClient(ctx, existingUser)
 		if err != nil {
 			return "", errors.New("Error al actualizar el usuario" + err.Error())
 		}
 	}
 
-	token, err := utils.GenerateJWT(existingUser.ID.Hex())
+	token, err := utils.GenerateJWT(existingUser.ID)
 	if err != nil {
 		return "", errors.New("Error al generar el token" + err.Error())
 	}
@@ -93,5 +107,55 @@ func LoginWithGoogle(gothUser goth.User) (string, error) {
 	   SI ESTA TODO REGISTRADO DESDE GOOGLE, DIRECTAMENTE PASA CON JWT
 
 	*/
+
+}
+
+func (l *Login) Register(userRegister models.ClientRegister) (models.LoginResponse, error) {
+
+	ctx := context.Background()
+
+	_, err := l.client.GetClientByEmail(ctx, userRegister.Email)
+
+	if err == nil {
+		return models.LoginResponse{}, errors.New("email already registered")
+	}
+	if !errors.Is(err, repositories.ErrUserNotFound) {
+		return models.LoginResponse{}, err
+	}
+
+	passwordHashed, err := utils.HashPassword(userRegister.Password)
+
+	if err != nil {
+		return models.LoginResponse{}, errors.New("we cant hash your password, try again")
+	}
+
+	newUser := &models.Client{
+		Nombre:      userRegister.Nombre,
+		Email:       userRegister.Email,
+		Password:    passwordHashed,
+		CompanyName: userRegister.CompanyName,
+		WebhookURL:  userRegister.WebhookURL,
+	}
+
+	newUser.Metodo = "local"
+	newUser.WebhookSecret, err = utils.WebHookSecret()
+	apiKey, err := utils.GenerateAPIKey()
+	newUser.APIKeyHash = utils.HashAPIKey(apiKey)
+	newUser.WebhookSecret, err = utils.WebHookSecret()
+	tokenReturned, err := utils.GenerateJWT(newUser.ID)
+
+	if err != nil {
+		return models.LoginResponse{}, errors.New("ha ocurrido un error creando el webhooksecret")
+	}
+
+	l.client.CreateClient(ctx, newUser)
+
+	return models.LoginResponse{
+		Success:       true,
+		Message:       "we have been created your profile successfully",
+		Token:         tokenReturned,
+		WebHookSecret: newUser.WebhookSecret,
+		ApiKey:        apiKey,
+	}, nil
 
 }

@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS clients (
     
     -- Webhook configuration
     webhook_url TEXT NOT NULL,
-    
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    method TEXT NOT NULL
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
