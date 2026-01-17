@@ -17,7 +17,7 @@
 │                           ▲                                  │
 │                           │ monitorea                        │
 │  ┌────────────────────────┴───────────────────────────────┐ │
-│  │ 2. SDK (que TÚ le das)                                  │ │
+│  │ 2. SDK (que la plataforma da)                            │ │
 │  │    - Corre en el servidor del cliente                   │ │
 │  │    - Hace 2 cosas:                                      │ │
 │  │      A) Monitorea la app cada 30s                       │ │
@@ -91,7 +91,7 @@ curl -X POST https://tu-plataforma.com/api/clients/register \
 **¿Qué pasó internamente?**
 
 ```
-Cliente                        Tu Servidor
+Cliente                         Servidor
   │                                 │
   │ POST /api/clients/register      │
   ├────────────────────────────────>│
@@ -198,7 +198,7 @@ func (sdk *SDK) ReportEvent(tipo, service, severity string, data map[string]inte
 **Flujo:**
 
 ```
-Servidor del Cliente                   Tu Servidor
+Servidor del Cliente                    Servidor
   │                                         │
   │ SDK detecta: app no responde            │
   │         ↓                                │
@@ -306,7 +306,7 @@ Tu Servidor (Agent corriendo en background)
 **Agent decide hacer restart:**
 
 ```
-Tu Servidor (Agent)                  Servidor del Cliente (SDK webhook)
+ Servidor (Agent)                  Servidor del Cliente (SDK webhook)
   │                                         │
   │ Gemini decidió: "restart api"           │
   │         ↓                                │
@@ -382,7 +382,7 @@ SDK del cliente ──(monitorea)──> Su propia API (localhost)
       │
       │ (si detecta problema)
       │
-      └──(HTTP POST)──> Tu Ingest API
+      └──(HTTP POST)──>  Ingest API
                        "Reporto: mi API está caída"
 ```
 
@@ -396,10 +396,10 @@ SDK del cliente ──(monitorea)──> Su propia API (localhost)
 |------------|-----------|-----------------|--------------|
 | **SDK (Monitor)** | Servidor del cliente | Chequear su propia app cada 30s | Automático (loop) |
 | **SDK (Webhook)** | Servidor del cliente | Recibir y ejecutar acciones | Cuando tu agente lo llama |
-| **Ingest API** | Tu servidor | Recibir eventos y guardar en DB | Cuando SDK reporta |
-| **Agent** | Tu servidor | Leer eventos, decidir, ejecutar | Cada 30s (loop) |
+| **Ingest API** |  servidor | Recibir eventos y guardar en DB | Cuando SDK reporta |
+| **Agent** |  servidor | Leer eventos, decidir, ejecutar | Cada 30s (loop) |
 | **Gemini** | API de Google | Analizar y decidir acción | Cuando agent pregunta |
-| **PostgreSQL** | Tu servidor | Almacenar todo | Siempre |
+| **PostgreSQL** |  servidor | Almacenar todo | Siempre |
 
 ---
 
@@ -541,7 +541,7 @@ if getCPU() > 90 {
                                         │            │ /api/events
                                         │            │
 ┌───────────────────────────────────────┼────────────▼──────────┐
-│                    TU SERVIDOR                                 │
+│                     SERVIDOR                                 │
 │                                       │                        │
 │  ┌──────────────────────────────┐    │                        │
 │  │ Ingest API (Gin)              │◄───┘                        │
@@ -571,7 +571,7 @@ if getCPU() > 90 {
 
 ---
 
-## ✅ Ahora debería estar CRISTALINO
+
 
 **El flujo es:**
 
