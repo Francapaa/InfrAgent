@@ -69,7 +69,7 @@
 
 ### MOMENTO 1: Setup inicial (una sola vez)
 
-**El cliente se registra en tu plataforma:**
+**El cliente se registra en la plataforma:**
 
 ```bash
 # El cliente ejecuta (o hace desde un formulario web):
