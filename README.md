@@ -1,6 +1,6 @@
 # InfrAgent
 # Arquitectura Completa del Sistema
-#AGENTE DE INFRAESTRUCTURA
+# AGENTE DE INFRAESTRUCTURA
 ## 🏗️ Los 3 Componentes Físicos
 
 ```
