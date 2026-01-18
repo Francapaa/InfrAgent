@@ -4,6 +4,15 @@ import (
 	"time"
 )
 
+// info que llega al endpoint cuando un usuario se registra localmente
+type ClientRegister struct {
+	Nombre      string `json:"nombre"`
+	Email       string `json:"email"`
+	CompanyName string `json:"company_name"`
+	Password    string `json:"password"`
+	WebhookURL  string `json:"webhook_url"`
+}
+
 // Client represents a registered user/company
 type Client struct {
 	ID            string    `json:"id"`
