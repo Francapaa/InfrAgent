@@ -82,7 +82,7 @@ func (a *AgentSDK) checkLocalHealth() bool {
 	client := http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Get(a.healthCheck)
 
-	if err != nil || resp.StatusCode == 200 {
+	if err != nil || resp.StatusCode != 200 {
 		return false
 	}
 	return true

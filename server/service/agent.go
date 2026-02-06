@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	models "server/model"
 	"server/repositories"
 	"server/service/agent/llm" // go importa por path del modulo + carpetas
@@ -34,9 +35,18 @@ func (e *AgentEngine) assembleContext(ctx context.Context, agent *models.Agent, 
 }
 
 func (e *AgentEngine) RunTick(ctx context.Context, agentId string) error {
-	agent, _ := e.agents.GetAgent(ctx, agentId)          // aca le damos el estado al agente
-	events, _ := e.events.GetPendingEvents(ctx, agentId) // aca cargamos los eventos pendientes que tenga
-	client, _ := e.client.GetClient(ctx, agent.ClientID)
+	agent, err := e.agents.GetAgent(ctx, agentId) // aca le damos el estado al agente
+	if err != nil {
+		return fmt.Errorf("error getting agent: %w", err)
+	}
+	events, err := e.events.GetPendingEvents(ctx, agentId) // aca cargamos los eventos pendientes que tenga
+	if err != nil {
+		return fmt.Errorf("error getting pending events: %w", err)
+	}
+	client, err := e.client.GetClient(ctx, agent.ClientID)
+	if err != nil {
+		return fmt.Errorf("error getting client: %w", err)
+	}
 
 	if len(events) == 0 {
 		return nil

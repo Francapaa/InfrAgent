@@ -6,12 +6,14 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"os"
 
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
 	"github.com/markbates/goth"
@@ -49,12 +51,35 @@ func NewAuth() {
 	)
 }
 
-func GenerateJWT(userId string) (string, error) {
+func GenerateJWT(userId uuid.UUID) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": userId,
-		"exp": time.Now().Add(time.Hour * 24).Unix(),
+		"sub": userId.String(),
+		"exp": time.Now().Add(time.Hour * 8).Unix(),
 	})
 	return token.SignedString([]byte(key))
+}
+
+// Claims representa los claims del JWT
+type Claims struct {
+	UserID string `json:"sub"`
+	jwt.RegisteredClaims
+}
+
+// ValidateJWT valida un token JWT y retorna los claims
+func ValidateJWT(tokenString string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(key), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, fmt.Errorf("invalid token")
 }
 
 func GenerateAPIKey() (string, error) {
@@ -98,6 +123,8 @@ func HashPassword(password string) (string, error) {
 	}
 	return string(passwordHashed), nil
 }
+
+// GenerateUUID genera un UUID v4 sin dependencias externas
 
 /*
 

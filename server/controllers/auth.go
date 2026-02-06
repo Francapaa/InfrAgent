@@ -14,33 +14,14 @@ type LoginController struct {
 	service *service.Login
 }
 
-func (lc *LoginController) LoginControllers(c *gin.Context) {
-
-	var user models.Client
-
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"Success": false,
-			"Message": "Datos faltantes o invalidos" + err.Error(),
-		})
-		return
+func NewLoginController(loginService *service.Login) *LoginController {
+	return &LoginController{
+		service: loginService,
 	}
+}
 
-	token, err := lc.service.LoginLocal(user.Email, user.Password)
-
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"Success": false,
-			"Message": "Falló en SERVICES",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, models.LoginResponse{
-		Success: true,
-		Message: "Todo ok, todo perfecto",
-		Token:   token,
-	})
+func NewWebSocketController() *WebSocketController {
+	return &WebSocketController{}
 }
 
 func (lc *LoginController) GoogleLogin(ctx *gin.Context) {
@@ -68,35 +49,79 @@ func (lc *LoginController) GetAuthCallBackFunction(ctx *gin.Context) {
 		ctx.JSON(500, gin.H{"Error": err.Error()})
 		return
 	}
-	ctx.JSON(200, gin.H{"Token": token})
+	const sessionDuration = 8 * 3600
+
+	ctx.SetCookie(
+		"auth_token",
+		token,
+		sessionDuration,
+		"/",
+		"",
+		true,
+		true,
+	)
+	//cambia en PROD.
+	ctx.Redirect(http.StatusFound, "http://localhost:3000/onboarding")
 }
 
-// registro de manera local
-func (lc *LoginController) LocalRegister(ctx *gin.Context) {
+func (lc *LoginController) CompleteRegistration(ctx *gin.Context) {
+	var req models.CompleteRegistrationRequest
 
-	var user models.ClientRegister
-
-	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"Success": false,
-			"Message": "Datos faltantes o invalidos" + err.Error(),
-		})
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "webhook_url is required"})
 		return
 	}
 
-	response, err := lc.service.Register(user)
+	// Obtener userID del JWT
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
+	userIDStr, ok := userID.(string)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	response, err := lc.service.CompleteRegistration(ctx, userIDStr, req.CompanyName, req.WebhookURL)
 	if err != nil {
-		ctx.JSON(500, gin.H{"Error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.LoginResponse{
-		Success:       true,
-		Message:       "Todo ok, todo perfecto",
-		Token:         response.Token,
-		WebHookSecret: response.WebHookSecret,
-		ApiKey:        response.ApiKey,
-	})
+	ctx.JSON(http.StatusOK, response)
+}
 
+func (lc *LoginController) GetCurrentUser(ctx *gin.Context) {
+	// Obtener userID del JWT
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	user, err := lc.service.GetUserByID(ctx, userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"id":           user.ID,
+		"email":        user.Email,
+		"name":         user.Nombre,
+		"company_name": user.CompanyName,
+		"webhook_url":  user.WebhookURL,
+		"metodo":       user.Metodo,
+		"created_at":   user.CreatedAt,
+		"updated_at":   user.UpdatedAt,
+	})
 }

@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"server/repositories"
+	"server/utils"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +17,7 @@ type Middleware struct {
 func (m *Middleware) authMiddlewareApi() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
+		authHeader := c.GetHeader("auth_token")
 
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing authorization header"})
@@ -43,4 +45,35 @@ func (m *Middleware) authMiddlewareApi() gin.HandlerFunc {
 		c.Next()
 	}
 
+}
+
+// JWTMiddleware valida tokens JWT para autenticación de usuarios
+func JWTMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("auth_token")
+		fmt.Println("header de autenticacion: ", authHeader)
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
+			c.Abort()
+			return
+		}
+
+		bearerToken := strings.Split(authHeader, " ")
+		if len(bearerToken) != 2 || bearerToken[0] != "Bearer" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
+			c.Abort()
+			return
+		}
+
+		token := bearerToken[1]
+		claims, err := utils.ValidateJWT(token)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			c.Abort()
+			return
+		}
+
+		c.Set("userID", claims.UserID)
+		c.Next()
+	}
 }

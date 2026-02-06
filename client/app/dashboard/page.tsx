@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useWebSocket, type AgentAction, type AgentStatus } from "@/app/hooks/use-agent-socket"
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL; 
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
 function StatusBadge({ status }: { status: AgentStatus }) {
   const config: Record<AgentStatus, { label: string; color: string; pulse: boolean }> = {
@@ -172,10 +173,67 @@ function useMockData(isConnected: boolean) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { state, isConnected, connectionError, sendCommand } = useWebSocket(WS_URL)
   const mockState = useMockData(isConnected)
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true)
   
   const displayState = isConnected ? state : mockState
+
+  // Verificar si el perfil está completo
+  useEffect(() => {
+    const checkProfile = async () => {
+      const token = localStorage.getItem("token")
+      
+      if (!token) {
+        router.push("/login")
+        return
+      }
+
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080"
+        const response = await fetch(`${backendUrl}/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const userData = await response.json()
+          
+          // Si no tiene perfil completo, redirigir a onboarding
+          if (!userData.company_name || !userData.webhook_url) {
+            router.push("/onboarding")
+            return
+          }
+        } else if (response.status === 401) {
+          // Token inválido
+          localStorage.removeItem("token")
+          localStorage.removeItem("user")
+          router.push("/login")
+          return
+        }
+      } catch (err) {
+        console.error("Error checking profile:", err)
+      } finally {
+        setIsCheckingProfile(false)
+      }
+    }
+
+    checkProfile()
+  }, [router])
+
+  // Mostrar loading mientras verifica el perfil
+  if (isCheckingProfile) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-gray-400">Verificando perfil...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -266,7 +324,7 @@ export default function DashboardPage() {
           <div className="rounded-lg border border-border bg-muted/20">
             {displayState.actions.length > 0 ? (
               <div className="max-h-96 overflow-y-auto px-4">
-                {displayState.actions.map((action) => (
+                {displayState.actions.map((action: AgentAction) => (
                   <ActionItem key={action.id} action={action} />
                 ))}
               </div>

@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // info que llega al endpoint cuando un usuario se registra localmente
@@ -15,7 +17,7 @@ type ClientRegister struct {
 
 // Client represents a registered user/company
 type Client struct {
-	ID            string    `json:"id"`
+	ID            uuid.UUID `json:"id"`
 	Nombre        string    `json:"nombre"`
 	Email         string    `json:"email"`
 	Password      string    `json:"password"`
@@ -127,4 +129,17 @@ type LLMDecision struct {
 	Confidence   float64                `json:"confidence"`
 	Alternative  string                 `json:"alternative,omitempty"` // Fallback plan
 	ShouldNotify bool                   `json:"should_notify"`
+}
+
+// CompleteRegistrationRequest represents the request to complete registration after Google login
+type CompleteRegistrationRequest struct {
+	CompanyName string `json:"company_name" binding:"required"`
+	WebhookURL  string `json:"webhook_url" binding:"required"`
+}
+
+// CompleteRegistrationResponse represents the response after completing registration
+type CompleteRegistrationResponse struct {
+	ClientID      uuid.UUID `json:"client_id"`
+	APIKey        string    `json:"api_key"`
+	WebhookSecret string    `json:"webhook_secret"`
 }

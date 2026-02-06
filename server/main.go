@@ -2,9 +2,11 @@ package main
 
 import (
 	"log"
+	"server/controllers"
 	"server/internal/database"
 	"server/repositories"
 	"server/routes"
+	"server/service"
 	"server/utils"
 
 	"github.com/gin-contrib/cors"
@@ -20,8 +22,14 @@ func main() {
 
 	db := database.ConnectDatabase()
 	defer db.Close()
+	sqlDB := database.GetSQLDB()
 	utils.NewAuth()
-	repositories.InitUserRepository(db)
+
+	loginService := service.NewLogin(repositories.NewPostgresStorage(sqlDB))
+
+	loginController := controllers.NewLoginController(loginService)
+
+	wsController := controllers.NewWebSocketController()
 
 	router := gin.Default()
 
@@ -32,7 +40,9 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	routes.SetUpRoutes(router)
+	setupRoutes := routes.NewSetUpRoutes(loginController, wsController)
+
+	setupRoutes.SetUpRoutes(router)
 
 	log.Println("🚀 Servidor corriendo en http://localhost:8080")
 	if err := router.Run(":8080"); err != nil {

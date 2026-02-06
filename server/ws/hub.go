@@ -32,3 +32,19 @@ func (h *Hub) run() {
 		}
 	}
 }
+
+var hub *Hub
+
+func init() {
+	hub = &Hub{
+		clients:    make(map[*Client]bool),
+		broadcast:  make(chan []byte),
+		register:   make(chan *Client),
+		unregister: make(chan *Client),
+	}
+	go hub.run()
+}
+
+func GetHub() *Hub {
+	return hub
+}

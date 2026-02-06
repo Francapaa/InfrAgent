@@ -3,15 +3,40 @@
 // custom hook para hacer la conexion WS
 import { useEffect, useReducer, useCallback, useRef } from 'react';
 
+// Tipo para datos JSON genéricos sin usar any
+type JSONValue = string | number | boolean | null | JSONObject | JSONArray;
+interface JSONObject {
+  [key: string]: JSONValue;
+}
+interface JSONArray extends Array<JSONValue> {}
+
+export type AgentStatus = 
+  | 'idle' 
+  | 'monitoring' 
+  | 'analyzing' 
+  | 'executing' 
+  | 'error';
+
+export type AgentAction = {
+  id: string;
+  type: string;
+  description: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  timestamp: string;
+  duration?: number;
+};
+
 type Agent = {
   id: string;
   client_id: string;
-  state: string;
+  state: AgentStatus;
   last_tick_at?: string;
   cooldown_until: string;
   created_at: string;
   updated_at: string;
 };
+
+type EventData = Record<string, JSONValue>;
 
 type Event = {
   id: string;
@@ -20,10 +45,14 @@ type Event = {
   type: string;
   service: string;
   severity: string;
-  data: Record<string, any>;
+  data: EventData;
   processed_at?: string;
   created_at: string;
 };
+
+type ActionResult = Record<string, JSONValue>;
+
+type ActionParams = Record<string, JSONValue>;
 
 type Action = {
   id: string;
@@ -31,27 +60,37 @@ type Action = {
   client_id: string;
   type: string;
   target: string;
-  params: Record<string, any>;
+  params: ActionParams;
   reasoning: string;
   confidence: number;
   status: string;
-  result: Record<string, any>;
+  result: ActionResult;
   executed_at?: string;
   created_at: string;
 };
 
+type WSMessageData = Agent | Event | Action | JSONObject;
+
 type WSMessage = {
   type: 'agent_update' | 'event_created' | 'action_taken' | 'agent_state_changed';
-  data: any;
+  data: WSMessageData;
 };
 
 // Estado del reducer
 type State = {
   agents: Agent[];
   events: Event[];
-  actions: Action[];
+  actions: AgentAction[];
   isConnected: boolean;
   error: string | null;
+  status: AgentStatus;
+  currentTask: string;
+  metrics: {
+    cpuUsage: number;
+    memoryUsage: number;
+    activeConnections: number;
+    errorsDetected: number;
+  };
 };
 
 // Acciones del reducer
@@ -61,6 +100,9 @@ type ReducerAction =
   | { type: 'UPDATE_AGENT'; payload: Agent }
   | { type: 'ADD_EVENT'; payload: Event }
   | { type: 'UPDATE_ACTION'; payload: Action }
+  | { type: 'SET_STATUS'; payload: AgentStatus }
+  | { type: 'SET_CURRENT_TASK'; payload: string }
+  | { type: 'SET_METRICS'; payload: State['metrics'] }
   | { type: 'RESET' };
 
 // Estado inicial
@@ -70,7 +112,27 @@ const initialState: State = {
   actions: [],
   isConnected: false,
   error: null,
+  status: 'idle',
+  currentTask: '',
+  metrics: {
+    cpuUsage: 0,
+    memoryUsage: 0,
+    activeConnections: 0,
+    errorsDetected: 0,
+  },
 };
+
+// Helper para convertir Action backend a AgentAction frontend
+function mapBackendActionToFrontend(action: Action): AgentAction {
+  return {
+    id: action.id,
+    type: action.type,
+    description: action.reasoning || `${action.type} on ${action.target}`,
+    status: action.status as AgentAction['status'],
+    timestamp: action.executed_at || action.created_at,
+    duration: action.result?.duration as number | undefined,
+  };
+}
 
 // Reducer
 function websocketReducer(state: State, action: ReducerAction): State {
@@ -94,29 +156,62 @@ function websocketReducer(state: State, action: ReducerAction): State {
       if (index >= 0) {
         const newAgents = [...state.agents];
         newAgents[index] = action.payload;
-        return { ...state, agents: newAgents };
+        return { 
+          ...state, 
+          agents: newAgents,
+          status: action.payload.state,
+        };
       }
-      return { ...state, agents: [...state.agents, action.payload] };
+      return { 
+        ...state, 
+        agents: [...state.agents, action.payload],
+        status: action.payload.state,
+      };
     }
 
     case 'ADD_EVENT':
       return {
         ...state,
         events: [action.payload, ...state.events].slice(0, 100), // Limitar a 100
+        metrics: {
+          ...state.metrics,
+          errorsDetected: action.payload.severity === 'critical' 
+            ? state.metrics.errorsDetected + 1 
+            : state.metrics.errorsDetected,
+        },
       };
 
     case 'UPDATE_ACTION': {
-      const index = state.actions.findIndex(a => a.id === action.payload.id);
+      const frontendAction = mapBackendActionToFrontend(action.payload);
+      const index = state.actions.findIndex(a => a.id === frontendAction.id);
       if (index >= 0) {
         const newActions = [...state.actions];
-        newActions[index] = action.payload;
+        newActions[index] = frontendAction;
         return { ...state, actions: newActions };
       }
       return {
         ...state,
-        actions: [action.payload, ...state.actions].slice(0, 100),
+        actions: [frontendAction, ...state.actions].slice(0, 100),
       };
     }
+
+    case 'SET_STATUS':
+      return {
+        ...state,
+        status: action.payload,
+      };
+
+    case 'SET_CURRENT_TASK':
+      return {
+        ...state,
+        currentTask: action.payload,
+      };
+
+    case 'SET_METRICS':
+      return {
+        ...state,
+        metrics: action.payload,
+      };
 
     case 'RESET':
       return initialState;
@@ -126,61 +221,115 @@ function websocketReducer(state: State, action: ReducerAction): State {
   }
 }
 
-type UseWebSocketReturn = {
-  agents: Agent[];
-  events: Event[];
-  actions: Action[];
-  isConnected: boolean;
-  error: string | null;
-  sendMessage: (message: any) => void;
+type CommandMessage = {
+  type: 'command';
+  command: 'pause' | 'resume';
 };
 
-export function useWebSocket(url: string | undefined = process.env.NEXT_PUBLIC_WS_URL): UseWebSocketReturn | undefined {
-  
-  if (!url){
-    console.log("no tenemos la url del backend con ws")
-    return
-  }
+type WebSocketMessage = CommandMessage | JSONObject;
 
-    const [state, dispatch] = useReducer(websocketReducer, initialState);
+export type UseWebSocketReturn = {
+  state: {
+    agents: Agent[];
+    events: Event[];
+    actions: AgentAction[];
+    status: AgentStatus;
+    currentTask: string;
+    metrics: {
+      cpuUsage: number;
+      memoryUsage: number;
+      activeConnections: number;
+      errorsDetected: number;
+    };
+    lastUpdate?: string;
+  };
+  isConnected: boolean;
+  connectionError: string | null;
+  sendCommand: (command: 'pause' | 'resume') => void;
+};
+
+export function useWebSocket(url: string | undefined = process.env.NEXT_PUBLIC_WS_URL): UseWebSocketReturn {
+  
+  const actualUrl = url || '';
+
+  const [state, dispatch] = useReducer(websocketReducer, initialState);
   const wsRef = useRef<WebSocket | null>(null);
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: WebSocketMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
     }
   }, []);
 
+  const sendCommand = useCallback((command: 'pause' | 'resume') => {
+    sendMessage({ type: 'command', command });
+    dispatch({ 
+      type: 'SET_CURRENT_TASK', 
+      payload: command === 'pause' ? 'Agente pausado' : 'Monitoreando servicios' 
+    });
+  }, [sendMessage]);
+
+  // Si no hay URL, retornar estado por defecto sin conexión
+  if (!actualUrl) {
+    console.log("no tenemos la url del backend con ws");
+    return {
+      state: {
+        agents: [],
+        events: [],
+        actions: [],
+        status: 'idle' as AgentStatus,
+        currentTask: '',
+        metrics: {
+          cpuUsage: 0,
+          memoryUsage: 0,
+          activeConnections: 0,
+          errorsDetected: 0,
+        },
+        lastUpdate: new Date().toISOString(),
+      },
+      isConnected: false,
+      connectionError: 'No se configuró la URL del WebSocket',
+      sendCommand,
+    };
+  }
+
   useEffect(() => {
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(actualUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
       console.log('WebSocket conectado');
       dispatch({ type: 'SET_CONNECTED', payload: true });
+      dispatch({ type: 'SET_CURRENT_TASK', payload: 'Monitoreando servicios de producción' });
     };
 
     ws.onmessage = (event) => {
       try {
-        const message: WSMessage = JSON.parse(event.data); //data que llega del back
+        const message: WSMessage = JSON.parse(event.data);
         
         switch (message.type) {
           case 'agent_update':
-            dispatch({ type: 'UPDATE_AGENT', payload: message.data });
+            dispatch({ type: 'UPDATE_AGENT', payload: message.data as Agent });
             break;
             
           case 'event_created':
-            dispatch({ type: 'ADD_EVENT', payload: message.data });
+            dispatch({ type: 'ADD_EVENT', payload: message.data as Event });
             break;
             
           case 'action_taken':
-            dispatch({ type: 'UPDATE_ACTION', payload: message.data });
+            dispatch({ type: 'UPDATE_ACTION', payload: message.data as Action });
             break;
             
           case 'agent_state_changed':
             console.log('Agent state changed:', message.data);
+            if (typeof message.data === 'object' && message.data !== null) {
+              const data = message.data as JSONObject;
+              if ('state' in data && typeof data.state === 'string') {
+                dispatch({ type: 'SET_STATUS', payload: data.state as AgentStatus });
+              }
+            }
             break;
-        }//por cada caso cambiamos el estado con la nueva data
+        }
       } catch (err) {
         console.error('Error parsing message:', err);
       }
@@ -203,11 +352,17 @@ export function useWebSocket(url: string | undefined = process.env.NEXT_PUBLIC_W
   }, [url]);
 
   return {
-    agents: state.agents,
-    events: state.events,
-    actions: state.actions,
+    state: {
+      agents: state.agents,
+      events: state.events,
+      actions: state.actions,
+      status: state.status,
+      currentTask: state.currentTask,
+      metrics: state.metrics,
+      lastUpdate: new Date().toISOString(),
+    },
     isConnected: state.isConnected,
-    error: state.error,
-    sendMessage,
+    connectionError: state.error,
+    sendCommand,
   };
 }

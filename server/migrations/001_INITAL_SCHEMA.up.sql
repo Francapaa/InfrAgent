@@ -1,6 +1,6 @@
 -- Initial schema for infrastructure agent system
 CREATE TABLE IF NOT EXISTS clients (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) NOT NULL UNIQUE,
     company_name VARCHAR(255) NOT NULL,
     google_id VARCHAR(150)
@@ -10,16 +10,16 @@ CREATE TABLE IF NOT EXISTS clients (
     webhook_secret VARCHAR(255) NOT NULL, -- Para firmar requests del agente
     
     -- Webhook configuration
-    webhook_url TEXT NOT NULL,
-    method TEXT NOT NULL
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
+    webhook_url TEXT,
+    method TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Client configurations
 CREATE TABLE IF NOT EXISTS client_configs (
     id SERIAL PRIMARY KEY,
-    client_id VARCHAR(255) NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     max_restarts_per_hour INT NOT NULL DEFAULT 3,
     allowed_actions JSONB NOT NULL DEFAULT '["restart", "notify", "wait"]'::jsonb,
     notify_on_nth_restart INT NOT NULL DEFAULT 3,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS client_configs (
 -- Agents table (1 agent per client)
 CREATE TABLE IF NOT EXISTS agents (
     id UUID PRIMARY KEY,
-    client_id VARCHAR(255) NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     state VARCHAR(50) NOT NULL DEFAULT 'idle', -- idle, analyzing, acting, cooldown
     last_tick_at TIMESTAMP,
     cooldown_until TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -44,8 +44,8 @@ CREATE TABLE IF NOT EXISTS agents (
 -- Events (incidents reported by client's SDK)
 CREATE TABLE IF NOT EXISTS events (
     id UUID PRIMARY KEY,
-    client_id VARCHAR(255) NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-    agent_id VARCHAR(255) NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
     type VARCHAR(100) NOT NULL, -- app_down, high_cpu, error_spike, etc
     service VARCHAR(255) NOT NULL, -- api, db, worker, etc
     severity VARCHAR(50) NOT NULL, -- info, warning, critical
@@ -57,8 +57,8 @@ CREATE TABLE IF NOT EXISTS events (
 -- Actions (decisions made by the agent)
 CREATE TABLE IF NOT EXISTS actions (
     id UUID PRIMARY KEY,
-    agent_id VARCHAR(255) NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
-    client_id VARCHAR(255) NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     type VARCHAR(100) NOT NULL, -- restart, notify, wait, scale, etc
     target VARCHAR(255) NOT NULL, -- api, db, etc
     params JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -73,8 +73,8 @@ CREATE TABLE IF NOT EXISTS actions (
 -- Notifications sent to clients
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY,
-    client_id VARCHAR(255) NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-    action_id VARCHAR(255) REFERENCES actions(id) ON DELETE SET NULL,
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    action_id UUID REFERENCES actions(id) ON DELETE SET NULL,
     type VARCHAR(50) NOT NULL, -- email, slack, webhook
     recipient VARCHAR(255) NOT NULL,
     subject VARCHAR(255),
@@ -96,17 +96,17 @@ CREATE INDEX idx_notifications_client ON notifications(client_id, created_at DES
 
 -- Function to auto-create agent when client is created
 CREATE OR REPLACE FUNCTION create_agent_for_client()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO agents (id, client_id, state)
-    VALUES ('agent-' || NEW.id, NEW.id, 'idle');
+    VALUES (gen_random_uuid(), NEW.id, 'idle');
     
     INSERT INTO client_configs (client_id)
     VALUES (NEW.id);
     
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trigger_create_agent_for_client
     AFTER INSERT ON clients
