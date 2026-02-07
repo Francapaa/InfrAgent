@@ -28,13 +28,10 @@ export async function fetchWithAuth<T>(
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
   const fetchOptions: RequestInit = {
     ...options,
     headers,
+    credentials: 'include',
     method: options.method || 'GET',
   };
 

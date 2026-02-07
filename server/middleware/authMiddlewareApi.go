@@ -50,23 +50,15 @@ func (m *Middleware) authMiddlewareApi() gin.HandlerFunc {
 // JWTMiddleware valida tokens JWT para autenticación de usuarios
 func JWTMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("auth_token")
+		authHeader, err := c.Cookie("auth_token")
 		fmt.Println("header de autenticacion: ", authHeader)
-		if authHeader == "" {
+		if authHeader == "" || err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
 			c.Abort()
 			return
 		}
 
-		bearerToken := strings.Split(authHeader, " ")
-		if len(bearerToken) != 2 || bearerToken[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
-			c.Abort()
-			return
-		}
-
-		token := bearerToken[1]
-		claims, err := utils.ValidateJWT(token)
+		claims, err := utils.ValidateJWT(authHeader)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			c.Abort()

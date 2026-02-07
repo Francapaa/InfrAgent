@@ -122,11 +122,12 @@ func (l *Login) CompleteRegistration(ctx context.Context, userID string, company
 	}
 
 	// Buscar usuario por ID
+	// tira error porque no encuentra bien el cliente
 	user, err := l.client.GetClient(ctx, userID)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
-
+	fmt.Println("Usuario encontrado: ", user)
 	// Verificar que sea usuario de Google
 	if user.Metodo != "google" {
 		return nil, errors.New("only google users can complete registration this way")
