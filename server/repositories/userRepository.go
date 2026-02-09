@@ -17,7 +17,7 @@ var ErrUserNotFound = errors.New("user not found")
 type ClientStorage interface {
 	// Client operations
 	CreateClient(ctx context.Context, user *models.Client) error
-	GetClient(ctx context.Context, id string) (*models.Client, error)
+	GetClient(ctx context.Context, id uuid.UUID) (*models.Client, error)
 	GetClientByAPIKey(ctx context.Context, apiKey string) (*models.Client, error)
 	GetClientByEmail(ctx context.Context, email string) (*models.Client, error)
 	GetClientByGoogleID(ctx context.Context, googleID string) (*models.Client, error)
@@ -55,20 +55,39 @@ func (s *PostgresStorage) CreateClient(ctx context.Context, user *models.Client)
 	return err
 }
 
-func (s *PostgresStorage) GetClient(ctx context.Context, id string) (*models.Client, error) {
+func (s *PostgresStorage) GetClient(ctx context.Context, id uuid.UUID) (*models.Client, error) {
 
 	var c models.Client
-	var ErrUserNotFound = errors.New("user not found")
+	var idStr string
+
+	idString := id.String()
+	fmt.Printf("[Repository] Buscando cliente con ID: '%s'\n", idString)
+	fmt.Printf("[Repository] Longitud del ID: %d\n", len(idString))
+	fmt.Printf("[Repository] UUID objeto: %+v\n", id)
 
 	err := s.db.QueryRowContext(ctx, `
-	SELECT id, nombre, email, password, company_name, metodo, google_id, api_key_hash, web_hook_secret, web_hook_url, created_at, updated_at
+	SELECT id::text, email, company_name ,metodo, google_id, api_key_hash, webhook_secret, webhook_url, created_at, updated_at
 	FROM clients 
-	WHERE id = $1 
-`, id).Scan(&c.ID, &c.Nombre, &c.Email, &c.Password, &c.CompanyName, &c.Metodo, &c.GoogleID, &c.APIKeyHash, &c.WebhookSecret, &c.WebhookURL, &c.CreatedAt, &c.UpdatedAt)
+	WHERE id = $1::uuid
+`, idString).Scan(&idStr, &c.Email, &c.CompanyName, &c.Metodo, &c.GoogleID, &c.APIKeyHash, &c.WebhookSecret, &c.WebhookURL, &c.CreatedAt, &c.UpdatedAt)
 
-	if err == sql.ErrNoRows {
-		return nil, ErrUserNotFound
+	fmt.Printf("[Repository] Error de query: %v\n", err)
+	fmt.Printf("[Repository] ID encontrado en BD: '%s'\n", idStr)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Printf("[Repository] No se encontraron filas\n")
+			return nil, nil
+		}
+		return nil, err
 	}
+
+	// Parsear el ID string a uuid.UUID
+	c.ID, err = uuid.Parse(idStr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing client ID: %w", err)
+	}
+
 	return &c, nil
 }
 
@@ -165,7 +184,7 @@ func (s *PostgresStorage) UpdateClientComplete(ctx context.Context, user *models
 		SET company_name = $1,
 		    webhook_url = $2,
 		    api_key_hash = $3,
-		    web_hook_secret = $4,
+		    webhook_secret = $4,
 		    updated_at = $5
 		WHERE id = $6
 	`, user.CompanyName, user.WebhookURL, user.APIKeyHash, user.WebhookSecret, time.Now(), user.ID)

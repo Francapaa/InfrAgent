@@ -7,6 +7,8 @@ import { useWebSocket, type AgentAction, type AgentStatus } from "@/app/hooks/us
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
+console.log(WS_URL); 
+
 function StatusBadge({ status }: { status: AgentStatus }) {
   const config: Record<AgentStatus, { label: string; color: string; pulse: boolean }> = {
     idle: { label: "Inactivo", color: "bg-muted-foreground", pulse: false },

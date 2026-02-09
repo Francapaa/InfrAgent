@@ -49,6 +49,14 @@ func (lc *LoginController) GetAuthCallBackFunction(ctx *gin.Context) {
 		ctx.JSON(500, gin.H{"Error": err.Error()})
 		return
 	}
+
+	// Buscar el usuario para verificar si tiene perfil completo
+	existingUser, err := lc.service.GetUserByEmail(ctx, user.Email)
+	if err != nil {
+		ctx.JSON(500, gin.H{"Error": "Error retrieving user"})
+		return
+	}
+
 	const sessionDuration = 8 * 3600
 
 	ctx.SetCookie(
@@ -60,7 +68,15 @@ func (lc *LoginController) GetAuthCallBackFunction(ctx *gin.Context) {
 		true,
 		true,
 	)
-	//cambia en PROD.
+
+	// Verificar si el usuario ya completó el perfil
+	// Si tiene webhook_url y company_name, ir directo al dashboard
+	if existingUser.WebhookURL != "" && existingUser.CompanyName != "" {
+		ctx.Redirect(http.StatusFound, "http://localhost:3000/dashboard")
+		return
+	}
+
+	// Si no tiene perfil completo, ir a onboarding
 	ctx.Redirect(http.StatusFound, "http://localhost:3000/onboarding")
 }
 
@@ -84,6 +100,9 @@ func (lc *LoginController) CompleteRegistration(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user ID"})
 		return
 	}
+
+	fmt.Printf("[Controller] userID del contexto: '%s'\n", userIDStr)
+	fmt.Printf("[Controller] Longitud del userID: %d\n", len(userIDStr))
 
 	response, err := lc.service.CompleteRegistration(ctx, userIDStr, req.CompanyName, req.WebhookURL)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Middleware struct {
@@ -66,6 +67,73 @@ func JWTMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("userID", claims.UserID)
+		c.Next()
+	}
+}
+
+// ProfileCompleteMiddleware verifica que el usuario haya completado su perfil
+// antes de permitir el acceso a rutas protegidas como el dashboard
+func ProfileCompleteMiddleware(client repositories.ClientStorage) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Obtener userID del contexto (seteado por JWTMiddleware)
+		userID, exists := c.Get("userID")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			c.Abort()
+			return
+		}
+
+		userIDStr, ok := userID.(string)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user ID"})
+			c.Abort()
+			return
+		}
+
+		// Parsear UUID
+		userUUID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user ID format"})
+			c.Abort()
+			return
+		}
+
+		// Obtener usuario de la base de datos
+		user, err := client.GetClient(c.Request.Context(), userUUID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error retrieving user"})
+			c.Abort()
+			return
+		}
+
+		if user == nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+			c.Abort()
+			return
+		}
+
+		// Verificar que el perfil esté completo
+		if user.WebhookURL == "" || user.CompanyName == "" {
+			missingFields := []string{}
+
+			if user.WebhookURL == "" {
+				missingFields = append(missingFields, "webhook_url")
+			}
+
+			if user.CompanyName == "" {
+				missingFields = append(missingFields, "company_name")
+			}
+
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":          "profile incomplete",
+				"message":        "User must complete registration before accessing this resource",
+				"redirect_to":    "/onboarding",
+				"missing_fields": missingFields,
+			})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }

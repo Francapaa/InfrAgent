@@ -8,6 +8,8 @@ import (
 	"server/service/agent/llm" // go importa por path del modulo + carpetas
 	service "server/service/exec"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ACA VA A ESTAR TODA LA LOGICA RELACIONADA AL AGENTE, EL WORKFLOW PRINCIPAL VA A ESTAR ALMACENADO EN ESTE
@@ -43,7 +45,12 @@ func (e *AgentEngine) RunTick(ctx context.Context, agentId string) error {
 	if err != nil {
 		return fmt.Errorf("error getting pending events: %w", err)
 	}
-	client, err := e.client.GetClient(ctx, agent.ClientID)
+	clientIDUUID, err := uuid.Parse(agent.ClientID)
+	if err != nil {
+		return fmt.Errorf("invalid client ID format: %w", err)
+	}
+
+	client, err := e.client.GetClient(ctx, clientIDUUID)
 	if err != nil {
 		return fmt.Errorf("error getting client: %w", err)
 	}

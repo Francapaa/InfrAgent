@@ -9,6 +9,8 @@ import (
 	models "server/model"
 	"server/repositories"
 	"server/utils"
+
+	"github.com/google/uuid"
 )
 
 type IngestHandler struct {
@@ -50,7 +52,13 @@ func (IH *IngestHandler) NewEventInRequestService(ctx context.Context, apiKey st
 func (IH *IngestHandler) sendUrgentNotification(clientId string, servicio string) {
 	//LOGICA QUE VA A CONECTAR CON MAIL
 	ctx := context.Background()
-	client, err := IH.client.GetClient(ctx, clientId)
+	clientIDUUID, err := uuid.Parse(clientId)
+	if err != nil {
+		log.Printf("[Error] ID de cliente inválido %s: %v", clientId, err)
+		return
+	}
+
+	client, err := IH.client.GetClient(ctx, clientIDUUID)
 	if err != nil {
 		log.Printf("[Error] No se pudo encontrar el cliente %s para notificar: %v", clientId, err)
 		return

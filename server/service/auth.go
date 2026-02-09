@@ -9,6 +9,7 @@ import (
 	"server/utils"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/markbates/goth"
 )
 
@@ -107,6 +108,11 @@ func (l *Login) LoginWithGoogle(gothUser goth.User) (string, error) {
 
 func (l *Login) CompleteRegistration(ctx context.Context, userID string, companyName string, webhookURL string) (*models.CompleteRegistrationResponse, error) {
 	// Validar company_name
+
+	fmt.Printf("[Service] userID recibido: '%s'\n", userID)
+	fmt.Printf("[Service] Longitud del userID: %d\n", len(userID))
+	fmt.Printf("[Service] Bytes del userID: %v\n", []byte(userID))
+
 	if companyName == "" {
 		return nil, errors.New("company_name is required")
 	}
@@ -122,8 +128,12 @@ func (l *Login) CompleteRegistration(ctx context.Context, userID string, company
 	}
 
 	// Buscar usuario por ID
-	// tira error porque no encuentra bien el cliente
-	user, err := l.client.GetClient(ctx, userID)
+	userIDUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID format")
+	}
+
+	user, err := l.client.GetClient(ctx, userIDUUID)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
@@ -170,9 +180,31 @@ func (l *Login) CompleteRegistration(ctx context.Context, userID string, company
 }
 
 func (l *Login) GetUserByID(ctx context.Context, userID string) (*models.Client, error) {
-	user, err := l.client.GetClient(ctx, userID)
+	userIDUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID format")
+	}
+
+	user, err := l.client.GetClient(ctx, userIDUUID)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
+	return user, nil
+}
+
+func (l *Login) GetUserByEmail(ctx context.Context, email string) (*models.Client, error) {
+	if email == "" {
+		return nil, errors.New("email is required")
+	}
+
+	user, err := l.client.GetClientByEmail(ctx, email)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
 	return user, nil
 }
