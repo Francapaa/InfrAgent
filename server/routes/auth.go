@@ -8,8 +8,9 @@ import (
 )
 
 type SetUpRoutes struct {
-	controllers  *controllers.LoginController
-	wsController *controllers.WebSocketController
+	controllers     *controllers.LoginController
+	wsController    *controllers.WebSocketController
+	agentController *controllers.AgentController
 }
 
 func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
@@ -24,11 +25,19 @@ func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
 		authorized.GET("/me", sp.controllers.GetCurrentUser)
 		authorized.POST("/complete-registration", sp.controllers.CompleteRegistration)
 	}
+
+	// Rutas del agente (protegidas con JWT)
+	agentRoutes := router.Group("/api/agent")
+	agentRoutes.Use(middleware.JWTMiddleware())
+	{
+		agentRoutes.GET("/state", sp.agentController.GetAgentState)
+	}
 }
 
-func NewSetUpRoutes(loginController *controllers.LoginController, wsController *controllers.WebSocketController) *SetUpRoutes {
+func NewSetUpRoutes(loginController *controllers.LoginController, wsController *controllers.WebSocketController, agentController *controllers.AgentController) *SetUpRoutes {
 	return &SetUpRoutes{
-		controllers:  loginController,
-		wsController: wsController,
+		controllers:     loginController,
+		wsController:    wsController,
+		agentController: agentController,
 	}
 }

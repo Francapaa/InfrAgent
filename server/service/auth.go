@@ -198,6 +198,7 @@ func (l *Login) GetUserByEmail(ctx context.Context, email string) (*models.Clien
 	}
 
 	user, err := l.client.GetClientByEmail(ctx, email)
+	fmt.Println("GET USER BY EMAIL: ", user)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}

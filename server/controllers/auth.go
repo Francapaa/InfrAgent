@@ -136,7 +136,6 @@ func (lc *LoginController) GetCurrentUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"id":           user.ID,
 		"email":        user.Email,
-		"name":         user.Nombre,
 		"company_name": user.CompanyName,
 		"webhook_url":  user.WebhookURL,
 		"metodo":       user.Metodo,

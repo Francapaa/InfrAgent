@@ -143,3 +143,51 @@ type CompleteRegistrationResponse struct {
 	APIKey        string    `json:"api_key"`
 	WebhookSecret string    `json:"webhook_secret"`
 }
+
+type WebSocketMessage struct {
+	Agents      []AgentInfo  `json:"agents"`
+	Events      []EventInfo  `json:"events"`
+	Actions     []ActionInfo `json:"actions"`
+	Status      string       `json:"status"`
+	CurrentTask string       `json:"currentTask"`
+	Metrics     MetricsInfo  `json:"metrics"`
+	Timestamp   string       `json:"timestamp"`
+	ClientID    string       `json:"clientId,omitempty"`
+}
+
+type AgentInfo struct {
+	ID            string     `json:"id"`
+	ClientID      string     `json:"client_id"`
+	State         string     `json:"state"`
+	LastTickAt    *time.Time `json:"last_tick_at"`
+	CooldownUntil time.Time  `json:"cooldown_until"`
+}
+
+type EventInfo struct {
+	ID          string                 `json:"id"`
+	Type        string                 `json:"type"`
+	Service     string                 `json:"service"`
+	Severity    string                 `json:"severity"`
+	Data        map[string]interface{} `json:"data"`
+	ProcessedAt *time.Time             `json:"processed_at"`
+	CreatedAt   time.Time              `json:"created_at"`
+}
+
+type ActionInfo struct {
+	ID          string     `json:"id"`
+	Type        string     `json:"type"`
+	Target      string     `json:"target"`
+	Status      string     `json:"status"`
+	Reasoning   string     `json:"reasoning"`
+	Confidence  float64    `json:"confidence"`
+	ExecutedAt  *time.Time `json:"executed_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+	Description string     `json:"description"`
+}
+
+type MetricsInfo struct {
+	CpuUsage          float64 `json:"cpuUsage"`
+	MemoryUsage       float64 `json:"memoryUsage"`
+	ActiveConnections int     `json:"activeConnections"`
+	ErrorsDetected    int     `json:"errorsDetected"`
+}

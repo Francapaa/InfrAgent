@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useWebSocket, type AgentAction, type AgentStatus } from "@/app/hooks/use-agent-socket"
+import { useWebSocketManager, type AgentAction, type AgentStatus } from "@/app/hooks/use-agent-socket"
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
@@ -176,7 +176,11 @@ function useMockData(isConnected: boolean) {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { state, isConnected, connectionError, sendCommand } = useWebSocket(WS_URL)
+  if(!WS_URL){
+    console.error("No existe la url de websockets, imposible de conectar")
+    return; 
+  }
+  const { state, isConnected, connectionError, sendCommand } = useWebSocketManager(WS_URL)
   const mockState = useMockData(isConnected)
   const [isCheckingProfile, setIsCheckingProfile] = useState(true)
   
@@ -185,19 +189,11 @@ export default function DashboardPage() {
   // Verificar si el perfil está completo
   useEffect(() => {
     const checkProfile = async () => {
-      const token = localStorage.getItem("token")
-      
-      if (!token) {
-        router.push("/login")
-        return
-      }
 
       try {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080"
         const response = await fetch(`${backendUrl}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+         credentials: 'include'
         })
 
         if (response.ok) {
@@ -210,8 +206,6 @@ export default function DashboardPage() {
           }
         } else if (response.status === 401) {
           // Token inválido
-          localStorage.removeItem("token")
-          localStorage.removeItem("user")
           router.push("/login")
           return
         }
@@ -246,7 +240,7 @@ export default function DashboardPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
               <span className="text-lg font-bold text-primary-foreground">A</span>
             </div>
-            <span className="text-lg font-bold">AgentWatch</span>
+            <span className="text-lg font-bold">InfraAgent</span>
           </Link>
           <ConnectionIndicator isConnected={isConnected} error={connectionError} />
         </div>

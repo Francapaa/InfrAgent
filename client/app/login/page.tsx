@@ -6,7 +6,11 @@ export default function Login() {
   const router = useRouter();
 
   const handleGoogleLogin = () => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (!backendUrl){
+      <h2 className="text-red-400">Please try again later, we have an error</h2>
+        return ; 
+    }
     window.location.href = `${backendUrl}/auth/google?callback_url=${encodeURIComponent(backendUrl + "/auth/google/callback")}`;
   };
 

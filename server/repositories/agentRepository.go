@@ -10,9 +10,11 @@ import (
 
 type AgentStorage interface {
 	GetAgent(ctx context.Context, id string) (*models.Agent, error)
-	GetAgentById(ctx context.Context, clientId string) (*models.Agent, error)
+	GetAgentByClientId(ctx context.Context, clientId string) (*models.Agent, error)
 	UpdateAgentState(ctx context.Context, id string, state string) error
 	GetAgentByApiKey(ctx context.Context, apiKey string) (*models.Agent, error)
+	GetAllAgents(ctx context.Context) ([]models.Agent, error)
+	SetAgentCooldown(ctx context.Context, id string, duration time.Duration) error
 }
 
 // QUERY PARA OBTENER EL AGENTE EN ESPECIFICO PARA NUESTRO CLIENTE (LUEGO OPTIMIZAMOS)
@@ -91,5 +93,34 @@ func (s *PostgresStorage) GetAgentByApiKey(ctx context.Context, apiKey string) (
 		return nil, fmt.Errorf("agent not found with client_id: %s ", apiKey)
 	}
 
-	return &a, nil
+	return &a, err
+}
+
+// GetAllAgents obtiene todos los agentes de la base de datos
+func (s *PostgresStorage) GetAllAgents(ctx context.Context) ([]models.Agent, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, client_id, state, last_tick_at, cooldown_until, created_at, updated_at
+		FROM agents
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("error querying agents: %w", err)
+	}
+	defer rows.Close()
+
+	var agents []models.Agent
+	for rows.Next() {
+		var a models.Agent
+		err := rows.Scan(&a.ID, &a.ClientID, &a.State, &a.LastTickAt, &a.CooldownUntil, &a.CreatedAt, &a.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning agent: %w", err)
+		}
+		agents = append(agents, a)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating agents: %w", err)
+	}
+
+	return agents, nil
 }

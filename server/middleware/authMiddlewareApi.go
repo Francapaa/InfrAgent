@@ -11,6 +11,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// UserIDKey es la clave usada para almacenar el ID del usuario en el contexto de Gin
+const UserIDKey = "userID"
+
 type Middleware struct {
 	client repositories.ClientStorage
 }
@@ -66,7 +69,7 @@ func JWTMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userID", claims.UserID)
+		c.Set(UserIDKey, claims.UserID)
 		c.Next()
 	}
 }
@@ -76,7 +79,7 @@ func JWTMiddleware() gin.HandlerFunc {
 func ProfileCompleteMiddleware(client repositories.ClientStorage) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Obtener userID del contexto (seteado por JWTMiddleware)
-		userID, exists := c.Get("userID")
+		userID, exists := c.Get(UserIDKey)
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			c.Abort()

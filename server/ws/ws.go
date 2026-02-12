@@ -42,6 +42,7 @@ func (c *Client) readPump() {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[WebSocket] PANIC en readPump: %v\n%s", r, debug.Stack())
+			c.conn.Close()
 		}
 
 		log.Println("[WebSocket] Cerrando readPump y desregistrando cliente")
