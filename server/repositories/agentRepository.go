@@ -84,10 +84,12 @@ func (s *PostgresStorage) GetAgentByApiKey(ctx context.Context, apiKey string) (
 	var a models.Agent
 
 	err := s.db.QueryRowContext(ctx, `
-		SELECT 	c.api_key_hash,c.id, i,a.id , a.client_id, a.state, a.last_tick_at, a.cooldown_until, a.created_at, a.updated_at
+		SELECT 	c.api_key_hash,c.id ,a.id , a.client_id, a.state, a.last_tick_at, a.cooldown_until, a.created_at, a.updated_at
+		FROM agents a
 		JOIN clients ON c.id = a.client_id
 		WHERE c.api_key_hash = $1
-		LIMIT = 1
+		LIMIT 1
+
 	`, apiKey).Scan(&a.ID, &a.ClientID, &a.State, &a.LastTickAt, &a.CooldownUntil, &a.CreatedAt, &a.UpdatedAt)
 
 	if err == sql.ErrNoRows {

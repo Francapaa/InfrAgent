@@ -59,7 +59,7 @@ func main() {
 
 	// Crear controlador del agente (solo HTTP)
 	agentController := controllers.NewAgentController(agentDataService)
-
+	startAgentScheduler(agentEngine, repo)
 	router := gin.New()
 
 	router.Use(cors.New(cors.Config{
