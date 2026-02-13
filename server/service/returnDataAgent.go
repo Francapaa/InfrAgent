@@ -41,17 +41,28 @@ func (s *AgentDataService) GetAgentStateForClient(ctx context.Context, clientID 
 
 // GetAgentByClientId obtiene el agente directamente por ID del cliente
 // Útil para operaciones que solo necesitan el agente sin su estado completo
-func (s *AgentDataService) GetAgentByClientId(ctx context.Context, clientID string) (*models.AgentInfo, error) {
+func (s *AgentDataService) GetAgentByClientId(ctx context.Context, clientID string) (*models.Agent, error) {
 	agent, err := s.agents.GetAgentByClientId(ctx, clientID)
 	if err != nil {
 		return nil, fmt.Errorf("agente no encontrado: %w", err)
 	}
 
-	return &models.AgentInfo{
+	return &models.Agent{
 		ID:            agent.ID,
 		ClientID:      agent.ClientID,
 		State:         agent.State,
 		LastTickAt:    agent.LastTickAt,
 		CooldownUntil: agent.CooldownUntil,
 	}, nil
+}
+
+func (s *AgentDataService) GetLast30ActionsByAgent(ctx context.Context, clientID string) ([]models.Action, error) {
+
+	actions, err := s.agents.GetLast30ActionsByAgent(ctx, clientID)
+
+	if err != nil {
+		return nil, fmt.Errorf("acciones no econtradas: %w", err)
+	}
+
+	return actions, nil
 }

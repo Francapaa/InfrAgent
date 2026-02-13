@@ -31,6 +31,7 @@ func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
 	agentRoutes.Use(middleware.JWTMiddleware())
 	{
 		agentRoutes.GET("/state", sp.agentController.GetAgentState)
+		agentRoutes.GET("/actions", sp.agentController.GetLastRecentActions)
 	}
 }
 

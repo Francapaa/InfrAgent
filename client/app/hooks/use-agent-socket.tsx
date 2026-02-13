@@ -61,9 +61,8 @@ export function useWebSocketManager(url: string) {
 
     onMessage: (event) => {
       try {
-        console.log(event.data)
-        const payload = JSON.parse(event.data);
-        console.log(payload); 
+        console.log("IMPRIMIENDO: ", event.data)
+        const payload = JSON.parse(event.data); 
         setData(payload);
       } catch (e) {
         console.error("[WS] Mensaje no es JSON válido:", event.data);

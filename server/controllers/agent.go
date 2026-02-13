@@ -44,3 +44,29 @@ func (c *AgentController) GetAgentState(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, state)
 }
+
+func (c *AgentController) GetLastRecentActions(ctx *gin.Context) {
+
+	userID, exists := ctx.Get(middleware.UserIDKey)
+
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Usuario no autenticado"})
+		return
+	}
+
+	clientID, ok := userID.(string)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener ID del usuario"})
+		return
+	}
+
+	actions, err := c.agentDataService.GetLast30ActionsByAgent(ctx, clientID)
+
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, actions)
+	// LLAMAR A SERVICE QUE RETORNE LAS ULTIMA 30 ACCIONES QUE HAYA HECHO EL AGENTE
+}

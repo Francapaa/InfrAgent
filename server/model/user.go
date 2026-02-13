@@ -65,18 +65,19 @@ type Event struct {
 
 // Action represents a decision made and executed by the agent
 type Action struct {
-	ID         string                 `json:"id"`
-	AgentID    string                 `json:"agent_id"`
-	ClientID   string                 `json:"client_id"`
-	Type       string                 `json:"type"`   // "restart", "notify", "wait", "scale", etc
-	Target     string                 `json:"target"` // "api", "db", etc
-	Params     map[string]interface{} `json:"params"`
-	Reasoning  string                 `json:"reasoning"`  // Why the agent chose this
-	Confidence float64                `json:"confidence"` // LLM confidence score
-	Status     string                 `json:"status"`     // "pending", "success", "failed"
-	Result     map[string]interface{} `json:"result"`     // Execution result
-	ExecutedAt *time.Time             `json:"executed_at"`
-	CreatedAt  time.Time              `json:"created_at"`
+	ID          string                 `json:"id"`
+	AgentID     string                 `json:"agent_id"`
+	ClientID    string                 `json:"client_id"`
+	Type        string                 `json:"type"`   // "restart", "notify", "wait", "scale", etc
+	Target      string                 `json:"target"` // "api", "db", etc
+	Params      map[string]interface{} `json:"params"`
+	Reasoning   string                 `json:"reasoning"`   // Why the agent chose this
+	Description string                 `json:"description"` //brief description of what the agent did
+	Confidence  float64                `json:"confidence"`  // LLM confidence score
+	Status      string                 `json:"status"`      // "pending", "success", "failed"
+	Result      map[string]interface{} `json:"result"`      // Execution result
+	ExecutedAt  *time.Time             `json:"executed_at"`
+	CreatedAt   time.Time              `json:"created_at"`
 }
 
 // Notification represents an alert sent to the client
@@ -145,44 +146,14 @@ type CompleteRegistrationResponse struct {
 }
 
 type WebSocketMessage struct {
-	Agents      []AgentInfo  `json:"agents"`
-	Events      []EventInfo  `json:"events"`
-	Actions     []ActionInfo `json:"actions"`
-	Status      string       `json:"status"`
-	CurrentTask string       `json:"currentTask"`
-	Metrics     MetricsInfo  `json:"metrics"`
-	Timestamp   string       `json:"timestamp"`
-	ClientID    string       `json:"clientId,omitempty"`
-}
-
-type AgentInfo struct {
-	ID            string     `json:"id"`
-	ClientID      string     `json:"client_id"`
-	State         string     `json:"state"`
-	LastTickAt    *time.Time `json:"last_tick_at"`
-	CooldownUntil time.Time  `json:"cooldown_until"`
-}
-
-type EventInfo struct {
-	ID          string                 `json:"id"`
-	Type        string                 `json:"type"`
-	Service     string                 `json:"service"`
-	Severity    string                 `json:"severity"`
-	Data        map[string]interface{} `json:"data"`
-	ProcessedAt *time.Time             `json:"processed_at"`
-	CreatedAt   time.Time              `json:"created_at"`
-}
-
-type ActionInfo struct {
-	ID          string     `json:"id"`
-	Type        string     `json:"type"`
-	Target      string     `json:"target"`
-	Status      string     `json:"status"`
-	Reasoning   string     `json:"reasoning"`
-	Confidence  float64    `json:"confidence"`
-	ExecutedAt  *time.Time `json:"executed_at"`
-	CreatedAt   time.Time  `json:"created_at"`
-	Description string     `json:"description"`
+	Agents      []Agent     `json:"agents"`
+	Events      []Event     `json:"events"`
+	Actions     []Action    `json:"actions"`
+	Status      string      `json:"status"`
+	CurrentTask string      `json:"currentTask"`
+	Metrics     MetricsInfo `json:"metrics"`
+	Timestamp   string      `json:"timestamp"`
+	ClientID    string      `json:"clientId,omitempty"`
 }
 
 type MetricsInfo struct {

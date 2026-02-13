@@ -150,10 +150,10 @@ func (e *AgentEngine) RunTick(ctx context.Context, agentId string) error {
 // broadcastState envía el estado actual del agente a todos los clientes WebSocket conectados
 func (e *AgentEngine) broadcastState(agent *models.Agent, status string, currentTask string, events []models.Event, actions []models.Action) {
 	// Convertir eventos
-	var eventInfos []models.EventInfo
+	var eventInfos []models.Event
 
 	for _, ev := range events {
-		eventInfos = append(eventInfos, models.EventInfo{
+		eventInfos = append(eventInfos, models.Event{
 			ID:          ev.ID,
 			Type:        ev.Type,
 			Service:     ev.Service,
@@ -165,14 +165,14 @@ func (e *AgentEngine) broadcastState(agent *models.Agent, status string, current
 	}
 
 	// Convertir acciones
-	var actionInfos []models.ActionInfo
+	var actionInfos []models.Action
 
 	for _, act := range actions {
 		description := act.Reasoning
 		if len(description) > 100 {
 			description = description[:100] + "..."
 		}
-		actionInfos = append(actionInfos, models.ActionInfo{
+		actionInfos = append(actionInfos, models.Action{
 			ID:          act.ID,
 			Type:        act.Type,
 			Target:      act.Target,
@@ -189,7 +189,7 @@ func (e *AgentEngine) broadcastState(agent *models.Agent, status string, current
 	metrics := e.generateSimulatedMetrics(events)
 
 	msg := models.WebSocketMessage{
-		Agents: []models.AgentInfo{{
+		Agents: []models.Agent{{
 			ID:            agent.ID,
 			ClientID:      agent.ClientID,
 			State:         agent.State,
@@ -262,9 +262,9 @@ func (e *AgentEngine) GetAgentState(ctx context.Context, agentID string) (*model
 	}
 
 	// Convertir a formato de respuesta
-	var eventInfos []models.EventInfo
+	var eventInfos []models.Event
 	for _, ev := range events {
-		eventInfos = append(eventInfos, models.EventInfo{
+		eventInfos = append(eventInfos, models.Event{
 			ID:          ev.ID,
 			Type:        ev.Type,
 			Service:     ev.Service,
@@ -275,13 +275,13 @@ func (e *AgentEngine) GetAgentState(ctx context.Context, agentID string) (*model
 		})
 	}
 
-	var actionInfos []models.ActionInfo
+	var actionInfos []models.Action
 	for _, act := range actions {
 		description := act.Reasoning
 		if len(description) > 100 {
 			description = description[:100] + "..."
 		}
-		actionInfos = append(actionInfos, models.ActionInfo{
+		actionInfos = append(actionInfos, models.Action{
 			ID:          act.ID,
 			Type:        act.Type,
 			Target:      act.Target,
@@ -297,7 +297,7 @@ func (e *AgentEngine) GetAgentState(ctx context.Context, agentID string) (*model
 	metrics := e.generateSimulatedMetrics(events)
 
 	return &models.WebSocketMessage{
-		Agents: []models.AgentInfo{{
+		Agents: []models.Agent{{
 			ID:            agent.ID,
 			ClientID:      agent.ClientID,
 			State:         agent.State,

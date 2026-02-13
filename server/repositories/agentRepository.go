@@ -15,6 +15,7 @@ type AgentStorage interface {
 	GetAgentByApiKey(ctx context.Context, apiKey string) (*models.Agent, error)
 	GetAllAgents(ctx context.Context) ([]models.Agent, error)
 	SetAgentCooldown(ctx context.Context, id string, duration time.Duration) error
+	GetLast30ActionsByAgent(ctx context.Context, clientId string) ([]models.Action, error)
 }
 
 // QUERY PARA OBTENER EL AGENTE EN ESPECIFICO PARA NUESTRO CLIENTE (LUEGO OPTIMIZAMOS)
@@ -123,4 +124,37 @@ func (s *PostgresStorage) GetAllAgents(ctx context.Context) ([]models.Agent, err
 	}
 
 	return agents, nil
+}
+
+func (s *PostgresStorage) GetLast30ActionsByAgent(ctx context.Context, userID string) ([]models.Action, error) {
+
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, client_id, type, target, reasoning, confidence, result, executed_at
+		FROM actions
+		WHERE client_id = $1::uuid
+		ORDER BY executed_at DESC
+		LIMIT 30 
+		OFFSET 0 
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("error querying agents: %w", err)
+	}
+	defer rows.Close()
+
+	var actions []models.Action
+	for rows.Next() {
+		var a models.Action
+		err := rows.Scan(&a.ID, &a.ClientID, &a.Type, &a.Target, &a.Reasoning, &a.Confidence, &a.Result, &a.ExecutedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning actions: %w", err)
+		}
+		actions = append(actions, a)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating actions by agent: %w", err)
+	}
+
+	return actions, nil
+
 }
