@@ -137,7 +137,7 @@ func (s *PostgresStorage) GetLast30ActionsByAgent(ctx context.Context, userID st
 		ORDER BY executed_at DESC
 		LIMIT 30 
 		OFFSET 0 
-	`)
+	`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("error querying agents: %w", err)
 	}

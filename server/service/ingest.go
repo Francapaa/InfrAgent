@@ -85,7 +85,7 @@ func (IH *IngestHandler) sendUrgentNotification(clientId string, servicio string
 func (IH *IngestHandler) sendMail(email, subject, body string) error {
 
 	from := "franciscocaparruva@gmail.com"
-	password := "Libertadores2018" // No es la contraseña real, es una 'App Password'
+	password := "" // No es la contraseña real, es una 'App Password'
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
 

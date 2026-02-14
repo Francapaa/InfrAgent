@@ -1,9 +1,13 @@
 package sdk
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	models "server/model"
+	"sdk/models"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +21,7 @@ type AgentSDK struct {
 	apiKey        string
 	webHookSecret string
 	backendURL    string
-	actions       map[string]ActionFunc
+	actions       (map[string]ActionFunc)
 	healthCheck   string // url para verificar el /health
 }
 
@@ -26,6 +30,7 @@ func NewSDK(apiKey, backendURL string, webHookSecret string) *AgentSDK {
 		apiKey:        apiKey,
 		backendURL:    backendURL,
 		webHookSecret: webHookSecret,
+		actions:       make(map[string]ActionFunc),
 	}
 }
 
@@ -44,9 +49,25 @@ func (a *AgentSDK) Run(port string) error {
 }
 
 func (a *AgentSDK) handleWebhook(c *gin.Context) {
-	var decision models.LLMDecision
+	body, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot read body"})
+		return
+	}
 
-	if err := c.ShouldBindJSON(&decision); err != nil {
+	signature := c.GetHeader("X-Agent-Signature")
+	if signature == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing signature"})
+		return
+	}
+
+	if !verifySignature(body, signature, a.webHookSecret) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
+		return
+	}
+
+	var decision models.LLMDecision
+	if err := json.Unmarshal(body, &decision); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
 		return
 	}
@@ -86,6 +107,13 @@ func (a *AgentSDK) checkLocalHealth() bool {
 		return false
 	}
 	return true
+}
+
+func verifySignature(body []byte, signature, secret string) bool {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(body)
+	expected := hex.EncodeToString(mac.Sum(nil))
+	return hmac.Equal([]byte(signature), []byte(expected))
 }
 
 /*
