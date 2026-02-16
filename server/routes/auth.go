@@ -16,7 +16,6 @@ type SetUpRoutes struct {
 func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
 	router.GET("/auth/:provider/callback", sp.controllers.GetAuthCallBackFunction)
 	router.GET("/auth/:provider", sp.controllers.GoogleLogin)
-	router.GET("/ws", sp.wsController.HandleWebSocket)
 
 	// Rutas protegidas con JWT
 	authorized := router.Group("/auth")
@@ -32,6 +31,11 @@ func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
 	{
 		agentRoutes.GET("/state", sp.agentController.GetAgentState)
 		agentRoutes.GET("/actions", sp.agentController.GetLastRecentActions)
+	}
+	websocketsRoutes := router.Group("/ws")
+	websocketsRoutes.Use(middleware.JWTMiddleware())
+	{
+		router.GET("/", sp.wsController.HandleWebSocket) // ahora podemos identificar segun el cliente
 	}
 }
 

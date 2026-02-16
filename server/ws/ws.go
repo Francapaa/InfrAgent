@@ -35,6 +35,7 @@ type Client struct {
 	hub  *Hub
 	conn *websocket.Conn
 	send chan []byte
+	id   string // para poder broadcastear segun cada cliente. Porque sino toda la informacion se reparte a todos los clientes (info de un cliente)
 }
 
 func (c *Client) readPump() {
@@ -151,7 +152,7 @@ func (c *Client) writePump() {
 	}
 }
 
-func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, userId string) {
 	log.Printf("[WebSocket] Nueva solicitud de conexión desde: %s", r.RemoteAddr)
 	log.Printf("[WebSocket] Headers:")
 	for name, values := range r.Header {
@@ -172,12 +173,14 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		hub:  hub,
 		conn: conn,
 		send: make(chan []byte, 256),
+		id:   userId,
 	}
 
 	// Registrar cliente de forma segura
 	select {
 	case hub.register <- client:
 		log.Printf("[WebSocket] Cliente enviado a registro")
+		log.Printf("Id: %s", client.id)
 	case <-time.After(5 * time.Second):
 		log.Println("[WebSocket] Timeout al registrar cliente")
 		conn.Close()

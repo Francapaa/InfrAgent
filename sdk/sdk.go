@@ -5,12 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
-	"sdk/models"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/Francapaa/InfrAgent/sdk/models"
 )
 
 //this is the folder which the users can install
@@ -40,62 +39,73 @@ func (a *AgentSDK) On(action string, fn ActionFunc) {
 
 }
 
-func (a *AgentSDK) Run(port string) error {
-	r := gin.Default()
-
-	r.POST("/webhook/agent", a.handleWebhook)
-	fmt.Printf("[SDK] escuchando en el puerto %s \n", port)
-	return r.Run(":" + port)
+// esta funcion es la que se encarga de verificar la firma para que no hayan problemas de seguridad.
+func (a *AgentSDK) verifyHMAC(payload []byte, signature string) bool {
+	h := hmac.New(sha256.New, []byte(a.webHookSecret))
+	h.Write(payload)
+	expected := hex.EncodeToString(h.Sum(nil))
+	return hmac.Equal([]byte(expected), []byte(signature))
 }
 
-func (a *AgentSDK) handleWebhook(c *gin.Context) {
-	body, err := c.GetRawData()
+func (a *AgentSDK) Run(port string) error {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/webhook/agent", a.handleWebhook)
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: mux,
+	}
+	return server.ListenAndServe()
+}
+
+func (a *AgentSDK) handleWebhook(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "metodo NO permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	signature := r.Header.Get("X-InfrAgent-signature")
+	body, err := io.ReadAll(r.Body)
+
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot read body"})
+		http.Error(w, "failed to read body", http.StatusInternalServerError)
+		return
+	}
+	if !a.verifyHMAC(body, signature) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid signature"})
 		return
 	}
 
-	signature := c.GetHeader("X-Agent-Signature")
-	if signature == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing signature"})
-		return
-	}
-
-	if !verifySignature(body, signature, a.webHookSecret) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid signature"})
-		return
-	}
-
+	// 3. Parsear el JSON
 	var decision models.LLMDecision
 	if err := json.Unmarshal(body, &decision); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid payload"})
 		return
 	}
 
-	if decision.Confidence < 0.9 || decision.Action == "restart" {
-		fmt.Printf("[AGENTE] verificando si de verdad la %s esta caido", decision.Target)
-
-		isHealthy := a.checkLocalHealth()
-
-		if isHealthy {
-			c.JSON(http.StatusOK, gin.H{"status": "aborted", "reason": "local health passed, works normally"})
-			return
-		}
-	}
-
+	// 4. Ejecutar la acción
 	handler, exists := a.actions[decision.Action]
-
-	if !exists { // una accion que no existe
-		c.JSON(http.StatusNotImplemented, gin.H{"status": "aborted", "reason": "this action doesnt exists"})
+	if !exists {
+		w.WriteHeader(http.StatusNotImplemented)
+		json.NewEncoder(w).Encode(map[string]string{"status": "aborted", "reason": "action not implemented"})
 		return
 	}
 
 	if err := handler(decision.Target, decision.Params); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+	// 5. Éxito
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+
 }
 
 func (a *AgentSDK) checkLocalHealth() bool {
@@ -107,13 +117,6 @@ func (a *AgentSDK) checkLocalHealth() bool {
 		return false
 	}
 	return true
-}
-
-func verifySignature(body []byte, signature, secret string) bool {
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(body)
-	expected := hex.EncodeToString(mac.Sum(nil))
-	return hmac.Equal([]byte(signature), []byte(expected))
 }
 
 /*

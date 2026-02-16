@@ -28,7 +28,7 @@ func (e *Executor) Execute(ctx context.Context, decision *models.LLMDecision, ag
 
 	req, _ := http.NewRequestWithContext(ctx, "POST", client.WebhookURL, bytes.NewBuffer(payload))
 	req.Header.Set("Content-type", "application/json")
-	req.Header.Set("X-Agent-Signature", signPayload(payload, client.WebhookSecret))
+	req.Header.Set("X-InfrAgent-Signature", signPayload(payload, client.WebhookSecret))
 
 	cliente := &http.Client{Timeout: 10 * time.Second}
 	response, err := cliente.Do(req)
