@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"time"
 
@@ -111,6 +112,13 @@ func IsValidaAPIKey(apiKey, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(apiKey))
 
 	return err == nil
+}
+
+func IsValidAPIKeyMiddleware(apiKey string) bool {
+	if strings.HasPrefix(apiKey, "agent_key_") {
+		return true
+	}
+	return false
 }
 
 func CompareHashedAPIKey(a, b string) bool {

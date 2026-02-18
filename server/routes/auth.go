@@ -3,14 +3,17 @@ package routes
 import (
 	"server/controllers"
 	"server/middleware"
+	"server/repositories"
 
 	"github.com/gin-gonic/gin"
 )
 
 type SetUpRoutes struct {
-	controllers     *controllers.LoginController
-	wsController    *controllers.WebSocketController
-	agentController *controllers.AgentController
+	controllers      *controllers.LoginController
+	wsController     *controllers.WebSocketController
+	agentController  *controllers.AgentController
+	clientStorage    *repositories.ClientStorage
+	ingestController *controllers.IngestHandlerController
 }
 
 func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
@@ -22,7 +25,11 @@ func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
 	authorized.Use(middleware.JWTMiddleware())
 	{
 		authorized.GET("/me", sp.controllers.GetCurrentUser)
-		authorized.POST("/complete-registration", sp.controllers.CompleteRegistration)
+		complete := authorized.Group("/")
+		complete.Use(middleware.ProfileCompleteMiddleware(*sp.clientStorage))
+		{
+			authorized.POST("/complete-registration", sp.controllers.CompleteRegistration)
+		}
 	}
 
 	// Rutas del agente (protegidas con JWT)
@@ -36,6 +43,11 @@ func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
 	websocketsRoutes.Use(middleware.JWTMiddleware())
 	{
 		router.GET("/", sp.wsController.HandleWebSocket) // ahora podemos identificar segun el cliente
+	}
+	SDKRoutes := router.Group("/sdk")
+	SDKRoutes.Use(middleware.AuthMiddlewareApiKey())
+	{
+		SDKRoutes.POST("/event", sp.ingestController.NewEventInRequest)
 	}
 }
 

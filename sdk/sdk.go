@@ -49,7 +49,7 @@ func (a *AgentSDK) verifyHMAC(payload []byte, signature string) bool {
 
 func (a *AgentSDK) Run(port string) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/webhook/agent", a.handleWebhook)
+	mux.HandleFunc("/webhook/agent", a.HandleWebhook)
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
@@ -57,7 +57,7 @@ func (a *AgentSDK) Run(port string) error {
 	return server.ListenAndServe()
 }
 
-func (a *AgentSDK) handleWebhook(w http.ResponseWriter, r *http.Request) {
+func (a *AgentSDK) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "metodo NO permitido", http.StatusMethodNotAllowed)

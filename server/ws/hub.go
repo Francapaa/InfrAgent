@@ -34,7 +34,6 @@ func (h *Hub) run() {
 			for client := range h.clients {
 				select {
 				case client.send <- message:
-					// Éxito
 				default:
 					// Canal lleno o bloqueado, remover cliente
 					log.Println("[Hub] Canal de cliente lleno, desregistrando")
