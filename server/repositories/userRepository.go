@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	models "server/model"
@@ -17,7 +18,7 @@ var ErrUserNotFound = errors.New("user not found")
 type ClientStorage interface {
 	// Client operations
 	CreateClient(ctx context.Context, user *models.Client) error
-	GetClient(ctx context.Context, id string) (*models.Client, error)
+	GetClient(ctx context.Context, id uuid.UUID) (*models.Client, error)
 	GetClientByAPIKey(ctx context.Context, apiKey string) (*models.Client, error)
 	GetClientByEmail(ctx context.Context, email string) (*models.Client, error)
 	GetClientByGoogleID(ctx context.Context, googleID string) (*models.Client, error)
@@ -55,20 +56,39 @@ func (s *PostgresStorage) CreateClient(ctx context.Context, user *models.Client)
 	return err
 }
 
-func (s *PostgresStorage) GetClient(ctx context.Context, id string) (*models.Client, error) {
+func (s *PostgresStorage) GetClient(ctx context.Context, id uuid.UUID) (*models.Client, error) {
 
 	var c models.Client
-	var ErrUserNotFound = errors.New("user not found")
+	var idStr string
+
+	idString := id.String()
+	fmt.Printf("[Repository] Buscando cliente con ID: '%s'\n", idString)
+	fmt.Printf("[Repository] Longitud del ID: %d\n", len(idString))
+	fmt.Printf("[Repository] UUID objeto: %+v\n", id)
 
 	err := s.db.QueryRowContext(ctx, `
-	SELECT id, nombre, email, password, company_name, metodo, google_id, api_key_hash, web_hook_secret, web_hook_url, created_at, updated_at
+	SELECT id::text, email, company_name ,metodo, google_id, api_key_hash, webhook_secret, webhook_url, created_at, updated_at
 	FROM clients 
-	WHERE id = $1 
-`, id).Scan(&c.ID, &c.Nombre, &c.Email, &c.Password, &c.CompanyName, &c.Metodo, &c.GoogleID, &c.APIKeyHash, &c.WebhookSecret, &c.WebhookURL, &c.CreatedAt, &c.UpdatedAt)
+	WHERE id = $1::uuid
+`, idString).Scan(&idStr, &c.Email, &c.CompanyName, &c.Metodo, &c.GoogleID, &c.APIKeyHash, &c.WebhookSecret, &c.WebhookURL, &c.CreatedAt, &c.UpdatedAt)
 
-	if err == sql.ErrNoRows {
-		return nil, ErrUserNotFound
+	fmt.Printf("[Repository] Error de query: %v\n (si es <nil> no hay error)", err)
+	fmt.Printf("[Repository] ID encontrado en BD: '%s'\n", idStr)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Printf("[Repository] No se encontraron filas\n")
+			return nil, nil
+		}
+		return nil, err
 	}
+
+	// Parsear el ID string a uuid.UUID
+	c.ID, err = uuid.Parse(idStr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing client ID: %w", err)
+	}
+
 	return &c, nil
 }
 
@@ -102,10 +122,10 @@ func (s *PostgresStorage) GetClientByEmail(ctx context.Context, email string) (*
 	var c models.Client
 
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, nombre, email, password, company_name, metodo, google_id, api_key_hash, web_hook_secret, web_hook_url, created_at, updated_at
+		SELECT id, email, company_name, metodo, google_id, api_key_hash, webhook_secret, webhook_url, created_at, updated_at
 		FROM clients 
 		WHERE email = $1 
-	`, email).Scan(&c.ID, &c.Nombre, &c.Email, &c.Password, &c.CompanyName, &c.Metodo, &c.GoogleID, &c.APIKeyHash, &c.WebhookSecret, &c.WebhookURL, &c.CreatedAt, &c.UpdatedAt)
+	`, email).Scan(&c.ID, &c.Email, &c.CompanyName, &c.Metodo, &c.GoogleID, &c.APIKeyHash, &c.WebhookSecret, &c.WebhookURL, &c.CreatedAt, &c.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -165,10 +185,70 @@ func (s *PostgresStorage) UpdateClientComplete(ctx context.Context, user *models
 		SET company_name = $1,
 		    webhook_url = $2,
 		    api_key_hash = $3,
-		    web_hook_secret = $4,
+		    webhook_secret = $4,
 		    updated_at = $5
 		WHERE id = $6
 	`, user.CompanyName, user.WebhookURL, user.APIKeyHash, user.WebhookSecret, time.Now(), user.ID)
 
+	return err
+}
+
+// EventStorage methods for PostgresStorage
+
+func (s *PostgresStorage) CreateEvent(ctx context.Context, event *models.Event) error {
+	dataJSON, err := json.Marshal(event.Data)
+	if err != nil {
+		return fmt.Errorf("marshal event data: %w", err)
+	}
+
+	_, err = s.db.ExecContext(ctx, `
+		INSERT INTO events (id, client_id, agent_id, type, service, severity, data, processed_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`, event.ID, event.ClientID, event.AgentID, event.Type, event.Service, event.Severity, dataJSON, event.ProcessedAt, event.CreatedAt)
+	return err
+}
+
+func (s *PostgresStorage) GetPendingEvents(ctx context.Context, agentId string) ([]models.Event, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, client_id, agent_id, type, service, severity, data, processed_at, created_at
+		FROM events
+		WHERE agent_id = $1 AND processed_at IS NULL
+		ORDER BY created_at
+		LIMIT 50
+	`, agentId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var events []models.Event
+
+	for rows.Next() {
+		var e models.Event
+		var dataJSON []byte
+
+		err := rows.Scan(&e.ID, &e.ClientID, &e.AgentID, &e.Type, &e.Service, &e.Severity, &dataJSON, &e.ProcessedAt, &e.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := json.Unmarshal(dataJSON, &e.Data); err != nil {
+			return nil, fmt.Errorf("unmarshal event data: %w", err)
+		}
+
+		events = append(events, e)
+	}
+
+	return events, nil
+}
+
+func (s *PostgresStorage) MarkEventProcessed(ctx context.Context, eventId string) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE events
+		SET processed_at = NOW()
+		WHERE id = $1
+	`, eventId)
 	return err
 }

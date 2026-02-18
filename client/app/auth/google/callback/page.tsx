@@ -22,11 +22,12 @@ export default function GoogleCallback() {
           return
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google/callback?${window.location.search}`)
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google/callback?${window.location.search}`, {
+          credentials: 'include' // envia las cookies ya que estamos usando http-only
+        })
         const data = await response.json()
 
-        if (response.ok && data.Token) {
-          localStorage.setItem("token", data.Token)
+        if (response.ok) {
           localStorage.setItem("user", JSON.stringify({
             email: data.Email || "",
             name: data.Name || "",
@@ -35,6 +36,7 @@ export default function GoogleCallback() {
         } else {
           setError(data.Error || "Error al procesar la respuesta")
           setLoading(false)
+          console.log("ACA ESTA ENTRANDO")
         }
       } catch (err) {
         setError("Error al conectar con el servidor")

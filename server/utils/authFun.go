@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"time"
 
@@ -92,24 +93,32 @@ func GenerateAPIKey() (string, error) {
 }
 
 func WebHookSecret() (string, error) {
-	bytes := make([]byte, 32)
-
+	bytes := make([]byte, 32) //256 bits para las firmas de HMAC
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
+// aca esta creando el hash de la apiKey (HMAC256)
 func HashAPIKey(apiKey string) string {
 	h := sha256.New()
 	h.Write([]byte(apiKey))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+// pero aca la trata de comparar con bcrypt (está mal)
 func IsValidaAPIKey(apiKey, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(apiKey))
 
 	return err == nil
+}
+
+func IsValidAPIKeyMiddleware(apiKey string) bool {
+	if strings.HasPrefix(apiKey, "agent_key_") {
+		return true
+	}
+	return false
 }
 
 func CompareHashedAPIKey(a, b string) bool {
@@ -130,5 +139,7 @@ func HashPassword(password string) (string, error) {
 
 ACA ESTAN CONVIVIENDO TODAS LAS FUNCIONES QUE SERAN DE UTILIDAD A LA HORA DEL LOGIN DE LOS USUARIOS
 IN THIS FILE WE HAVE ALL FUNCTION WHICH ARE USED TO CREATE THE SDK IN THE LOGIN
+
+
 
 */
