@@ -38,6 +38,7 @@ export function useDashboard(): UseDashboardReturn {
 
   // Verificar que WS_URL existe
   useEffect(() => {
+      console.log(WS_URL)
     if (!WS_URL) {
       console.error("No existe la url de websockets, imposible de conectar")
       setWsUrlError(true)

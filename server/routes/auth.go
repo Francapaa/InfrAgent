@@ -12,7 +12,7 @@ type SetUpRoutes struct {
 	controllers      *controllers.LoginController
 	wsController     *controllers.WebSocketController
 	agentController  *controllers.AgentController
-	clientStorage    *repositories.ClientStorage
+	clientStorage    repositories.ClientStorage
 	ingestController *controllers.IngestHandlerController
 }
 
@@ -26,7 +26,7 @@ func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
 	{
 		authorized.GET("/me", sp.controllers.GetCurrentUser)
 		complete := authorized.Group("/")
-		complete.Use(middleware.ProfileCompleteMiddleware(*sp.clientStorage))
+		complete.Use(middleware.ProfileCompleteMiddleware(sp.clientStorage))
 		{
 			authorized.POST("/complete-registration", sp.controllers.CompleteRegistration)
 		}
@@ -42,7 +42,7 @@ func (sp *SetUpRoutes) SetUpRoutes(router *gin.Engine) {
 	websocketsRoutes := router.Group("/ws")
 	websocketsRoutes.Use(middleware.JWTMiddleware())
 	{
-		router.GET("/", sp.wsController.HandleWebSocket) // ahora podemos identificar segun el cliente
+		websocketsRoutes.GET("", sp.wsController.HandleWebSocket) // ahora podemos identificar segun el cliente
 	}
 	SDKRoutes := router.Group("/sdk")
 	SDKRoutes.Use(middleware.AuthMiddlewareApiKey())
