@@ -1,5 +1,17 @@
-import '../app/globals.css' // Asegúrate de importar los estilos de Tailwind
-import {inter} from '../app/fonts/fonts'
+import '../app/globals.css'
+import { inter, jetbrainsMono } from '../app/fonts/fonts'
+import type { Metadata, Viewport } from 'next'
+
+export const metadata: Metadata = {
+  title: 'InfrAgent - Autonomous AI Infrastructure Agent',
+  description:
+    'InfrAgent monitors your infrastructure 24/7, detects issues in real-time, and autonomously resolves them with AI-powered decision making.',
+}
+
+export const viewport: Viewport = {
+  themeColor: '#000000',
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -7,7 +19,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={`${inter.className} antialised`}>{children}</body>
+      <body
+        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+      >
+        {children}
+      </body>
     </html>
   )
 }
