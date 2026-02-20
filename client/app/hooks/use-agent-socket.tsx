@@ -36,7 +36,7 @@ export function useWebSocketManager(url: string) {
       setSpecificError(null);
     },
 
-    onClose: (event) => {
+    onClose: (event: CloseEvent) => {
       let reason = "Desconocido";
       
       switch (event.code) {
@@ -54,13 +54,14 @@ export function useWebSocketManager(url: string) {
       setSpecificError(reason);
     },
 
-    onError: (event) => {
+    onError: (event: Event) => {
       console.error('%c[WS] 🔥 Error de red/socket:', 'color: red;', event);
       setSpecificError("Error de red o servidor no alcanzable");
     },
 
-    onMessage: (event) => {
+    onMessage: (event: MessageEvent) => {
       try {
+        console.log(event)
         console.log("IMPRIMIENDO: ", event.data)
         const payload = JSON.parse(event.data); 
         setData(payload);

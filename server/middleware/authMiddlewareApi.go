@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"server/repositories"
 	"server/utils"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -98,17 +99,25 @@ func ProfileCompleteMiddleware(client repositories.ClientStorage) gin.HandlerFun
 		}
 
 		// Verificar que el perfil esté completo
-		if user.WebhookURL == "" || user.CompanyName == "" {
-			missingFields := []string{}
+		missingFields := []string{}
+		hasErrors := false
 
-			if user.WebhookURL == "" {
-				missingFields = append(missingFields, "webhook_url")
-			}
+		// Validar WebhookURL
+		if user.WebhookURL == "" || strings.TrimSpace(user.WebhookURL) == "" {
+			missingFields = append(missingFields, "webhook_url")
+			hasErrors = true
+		} else if !strings.HasPrefix(user.WebhookURL, "https://") {
+			missingFields = append(missingFields, "webhook_url_must_start_with_https")
+			hasErrors = true
+		}
 
-			if user.CompanyName == "" {
-				missingFields = append(missingFields, "company_name")
-			}
+		// Validar CompanyName
+		if user.CompanyName == "" || strings.TrimSpace(user.CompanyName) == "" {
+			missingFields = append(missingFields, "company_name")
+			hasErrors = true
+		}
 
+		if hasErrors {
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":          "profile incomplete",
 				"message":        "User must complete registration before accessing this resource",
