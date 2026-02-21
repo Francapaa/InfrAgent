@@ -14,15 +14,38 @@ export default function CTA() {
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link
             href="/onboarding"
-            className="rounded-md bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="group relative h-11 overflow-hidden rounded-md bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Get Started for Free
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              Get Started for Free
+            </span>
+            <span className="absolute inset-0 flex items-center justify-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              Get Started for Free
+            </span>
           </Link>
           <Link
             href="/login"
-            className="group flex items-center gap-2 rounded-md border border-border px-8 py-3 text-sm font-medium text-foreground transition-colors hover:border-muted-foreground"
+            className="group relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-md border border-border px-8 py-3 text-sm font-medium text-foreground transition-colors hover:border-muted-foreground"
           >
-            Log In to Dashboard
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              Log In to Dashboard
+            </span>
+            <span className="absolute inset-0 flex items-center justify-center gap-2 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              Log In to Dashboard
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </span>
             <svg
               width="16"
               height="16"

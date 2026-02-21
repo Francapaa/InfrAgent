@@ -34,40 +34,53 @@ export default function Navbar() {
         <div className="hidden items-center gap-8 md:flex">
           <a
             href="#features"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            Features
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              Features
+            </span>
+            <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              Features
+            </span>
           </a>
           <a
             href="#how-it-works"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            How It Works
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              How It Works
+            </span>
+            <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              How It Works
+            </span>
           </a>
           <a
             href="#faq"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            FAQ
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              FAQ
+            </span>
+            <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              FAQ
+            </span>
           </a>
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
           <Link
             href="/login"
-            className="rounded-md px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+            className="group relative overflow-hidden rounded-md px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
           >
-            Log In
-          </Link>
-          <Link
-            href="/onboarding"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Get Started
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-[140%]">
+              Log In
+            </span>
+            <span className="absolute inset-0 flex items-center justify-center translate-y-full transition-transform duration-300 ease-out group-hover:-translate-y-0">
+              Log In
+            </span>
           </Link>
         </div>
 
-        {/* Mobile hamburger */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="flex h-10 w-10 items-center justify-center rounded-md text-foreground md:hidden"
@@ -88,43 +101,67 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile menu */}
       {mobileOpen && (
         <div className="border-t border-border bg-background px-6 pb-6 pt-4 md:hidden">
           <div className="flex flex-col gap-4">
             <a
               href="#features"
               onClick={() => setMobileOpen(false)}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              Features
+              <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+                Features
+              </span>
+              <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+                Features
+              </span>
             </a>
             <a
               href="#how-it-works"
               onClick={() => setMobileOpen(false)}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              How It Works
+              <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+                How It Works
+              </span>
+              <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+                How It Works
+              </span>
             </a>
             <a
               href="#faq"
               onClick={() => setMobileOpen(false)}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              FAQ
+              <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+                FAQ
+              </span>
+              <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+                FAQ
+              </span>
             </a>
             <div className="flex flex-col gap-2 pt-4 border-t border-border">
               <Link
                 href="/login"
-                className="rounded-md px-4 py-2 text-center text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+                className="group relative overflow-hidden rounded-md px-4 py-2 text-center text-sm font-medium text-foreground transition-colors hover:bg-secondary"
               >
-                Log In
+                <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+                  Log In
+                </span>
+                <span className="absolute inset-0 flex items-center justify-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+                  Log In
+                </span>
               </Link>
               <Link
                 href="/onboarding"
-                className="rounded-md bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                className="group relative overflow-hidden rounded-md bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
               >
-                Get Started
+                <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+                  Get Started
+                </span>
+                <span className="absolute inset-0 flex items-center justify-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+                  Get Started
+                </span>
               </Link>
             </div>
           </div>

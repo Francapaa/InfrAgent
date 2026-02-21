@@ -49,10 +49,15 @@ export default function FAQ() {
             <div key={i}>
               <button
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="flex w-full items-center justify-between py-5 text-left"
+                className="group flex w-full items-center justify-between py-5 text-left"
               >
-                <span className="pr-4 text-base font-medium text-foreground">
-                  {faq.q}
+                <span className="relative overflow-hidden pr-4 text-base font-medium text-foreground">
+                  <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+                    {faq.q}
+                  </span>
+                  <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+                    {faq.q}
+                  </span>
                 </span>
                 <svg
                   width="20"

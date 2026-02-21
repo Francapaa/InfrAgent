@@ -29,27 +29,47 @@ export default function Footer() {
         <div className="flex items-center gap-6">
           <Link
             href="/login"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            Log In
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              Log In
+            </span>
+            <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              Log In
+            </span>
           </Link>
           <Link
             href="/onboarding"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            Get Started
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              Get Started
+            </span>
+            <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              Get Started
+            </span>
           </Link>
           <a
             href="#features"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            Features
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              Features
+            </span>
+            <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              Features
+            </span>
           </a>
           <a
             href="#faq"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="group relative h-5 overflow-hidden text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            FAQ
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              FAQ
+            </span>
+            <span className="absolute inset-0 flex items-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              FAQ
+            </span>
           </a>
         </div>
 

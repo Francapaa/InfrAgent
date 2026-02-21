@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	models "server/model"
 	"server/repositories"
 	"server/utils"
@@ -25,8 +24,6 @@ func NewLogin(client repositories.ClientStorage) *Login {
 
 func (l *Login) LoginWithGoogle(gothUser goth.User) (string, error) {
 	ctx := context.Background()
-	fmt.Println("ENTRE AL LOGIN WITH GOOGLE")
-	// Validar que tenemos datos de Google
 	if gothUser.UserID == "" {
 		return "", errors.New("google user ID is required")
 	}
@@ -34,28 +31,17 @@ func (l *Login) LoginWithGoogle(gothUser goth.User) (string, error) {
 		return "", errors.New("google email is required")
 	}
 
-	// PASO 1: Buscar si el GoogleID ya existe
-	fmt.Println(gothUser.UserID)
 	existingByGoogleID, err := l.client.GetClientByGoogleID(ctx, gothUser.UserID)
-	fmt.Println(existingByGoogleID)
 	if err == nil && existingByGoogleID != nil {
-		fmt.Println("TE ENCONTRE POR GOOGLE ID")
-		// Usuario ya registrado con Google - login normal
 		token, err := utils.GenerateJWT(existingByGoogleID.ID)
 		if err != nil {
 			return "", errors.New("error generating token: " + err.Error())
 		}
-
 		return token, nil
 	}
 
-	// PASO 2: Buscar por Email
 	existingByEmail, err := l.client.GetClientByEmail(ctx, gothUser.Email)
 	if err == nil && existingByEmail != nil {
-		fmt.Println("TE ENCONTRE POR MAIL")
-		fmt.Println("SOS ESTE: ", existingByEmail)
-		fmt.Println("HASTA ACA SOS")
-		// El email existe pero no tiene GoogleID - hacer UPDATE
 		existingByEmail.Metodo = "google"
 		existingByEmail.GoogleID = gothUser.UserID
 
@@ -71,11 +57,7 @@ func (l *Login) LoginWithGoogle(gothUser goth.User) (string, error) {
 		return token, nil
 	}
 
-	// PASO 3: No existe ni GoogleID ni Email - INSERT nuevo usuario
-	// El ID lo genera PostgreSQL (gen_random_uuid())
-	fmt.Println("TE VOY A INSERTAR PORQUE NO TE CONOZCO")
 	newUser := &models.Client{
-		// ID se deja vacío para que PostgreSQL genere el UUID
 		CompanyName:   "",
 		Email:         gothUser.Email,
 		GoogleID:      gothUser.UserID,
@@ -83,21 +65,13 @@ func (l *Login) LoginWithGoogle(gothUser goth.User) (string, error) {
 		APIKeyHash:    "",
 		WebhookSecret: "",
 		WebhookURL:    "",
-		// WebhookURL queda vacío temporalmente, se completará luego
 	}
 
-	/*
-		LOS DATOS MAS IMPORTANTES QUEDAN VACIOS YA QUE SE VAN A INGRESAR POSTERIORMENTE AL REGISTRO
-	*/
-
-	// Crear usuario en BD
 	err = l.client.CreateClient(ctx, newUser)
 	if err != nil {
 		return "", errors.New("error creating user: " + err.Error())
 	}
 
-	// IMPORTANTE: No devolvemos apiKey ni webhookSecret todavía
-	// El usuario debe completar el registro con webhook_url primero
 	token, err := utils.GenerateJWT(newUser.ID)
 	if err != nil {
 		return "", errors.New("error generating token: " + err.Error())
@@ -107,27 +81,18 @@ func (l *Login) LoginWithGoogle(gothUser goth.User) (string, error) {
 }
 
 func (l *Login) CompleteRegistration(ctx context.Context, userID string, companyName string, webhookURL string) (*models.CompleteRegistrationResponse, error) {
-	// Validar company_name
-
-	fmt.Printf("[Service] userID recibido: '%s'\n", userID)
-	fmt.Printf("[Service] Longitud del userID: %d\n", len(userID))
-	fmt.Printf("[Service] Bytes del userID: %v\n", []byte(userID))
-
 	if companyName == "" {
 		return nil, errors.New("company_name is required")
 	}
 
-	// Validar webhook_url
 	if webhookURL == "" {
 		return nil, errors.New("webhook_url is required")
 	}
 
-	// Validar que webhook_url sea HTTPS
 	if !strings.HasPrefix(webhookURL, "https://") {
 		return nil, errors.New("webhook_url must use HTTPS")
 	}
 
-	// Buscar usuario por ID
 	userIDUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, errors.New("invalid user ID format")
@@ -137,18 +102,14 @@ func (l *Login) CompleteRegistration(ctx context.Context, userID string, company
 	if err != nil {
 		return nil, errors.New("user not found")
 	}
-	fmt.Println("Usuario encontrado: ", user)
-	// Verificar que sea usuario de Google
 	if user.Metodo != "google" {
 		return nil, errors.New("only google users can complete registration this way")
 	}
 
-	// Verificar que no haya completado el registro antes
 	if user.WebhookURL != "" {
 		return nil, errors.New("registration already completed")
 	}
 
-	// Generar nueva API Key y Webhook Secret (por seguridad, diferentes a los temporales)
 	apiKey, err := utils.GenerateAPIKey()
 	if err != nil {
 		return nil, errors.New("error generating API key")
@@ -160,13 +121,11 @@ func (l *Login) CompleteRegistration(ctx context.Context, userID string, company
 		return nil, errors.New("error generating webhook secret")
 	}
 
-	// Actualizar usuario con company_name, webhook_url y nuevas credenciales
 	user.CompanyName = companyName
 	user.WebhookURL = webhookURL
 	user.APIKeyHash = apiKeyHashed
 	user.WebhookSecret = webhookSecret
 
-	// Usar el método específico para completar registro
 	err = l.client.UpdateClientComplete(ctx, user)
 	if err != nil {
 		return nil, errors.New("error updating user: " + err.Error())
@@ -198,7 +157,6 @@ func (l *Login) GetUserByEmail(ctx context.Context, email string) (*models.Clien
 	}
 
 	user, err := l.client.GetClientByEmail(ctx, email)
-	fmt.Println("GET USER BY EMAIL: ", user)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}

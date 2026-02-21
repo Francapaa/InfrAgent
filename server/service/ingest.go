@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
+	"os"
 	models "server/model"
 	"server/repositories"
 	"server/utils"
@@ -85,7 +86,11 @@ func (IH *IngestHandler) sendUrgentNotification(clientId string, servicio string
 func (IH *IngestHandler) sendMail(email, subject, body string) error {
 
 	from := "franciscocaparruva@gmail.com"
-	password := "" // No es la contraseña real, es una 'App Password'
+	password := os.Getenv("PASSWORD_MAIL")
+	if password == "" {
+		log.Println("Error, la contraseña no está cargando")
+		return nil
+	}
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
 

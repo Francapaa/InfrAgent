@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	models "server/model"
 	"server/utils"
 	"time"
@@ -57,14 +58,10 @@ func (s *PostgresStorage) CreateClient(ctx context.Context, user *models.Client)
 }
 
 func (s *PostgresStorage) GetClient(ctx context.Context, id uuid.UUID) (*models.Client, error) {
-
 	var c models.Client
 	var idStr string
 
 	idString := id.String()
-	fmt.Printf("[Repository] Buscando cliente con ID: '%s'\n", idString)
-	fmt.Printf("[Repository] Longitud del ID: %d\n", len(idString))
-	fmt.Printf("[Repository] UUID objeto: %+v\n", id)
 
 	err := s.db.QueryRowContext(ctx, `
 	SELECT id::text, email, company_name ,metodo, google_id, api_key_hash, webhook_secret, webhook_url, created_at, updated_at
@@ -72,18 +69,14 @@ func (s *PostgresStorage) GetClient(ctx context.Context, id uuid.UUID) (*models.
 	WHERE id = $1::uuid
 `, idString).Scan(&idStr, &c.Email, &c.CompanyName, &c.Metodo, &c.GoogleID, &c.APIKeyHash, &c.WebhookSecret, &c.WebhookURL, &c.CreatedAt, &c.UpdatedAt)
 
-	fmt.Printf("[Repository] Error de query: %v\n (si es <nil> no hay error)", err)
-	fmt.Printf("[Repository] ID encontrado en BD: '%s'\n", idStr)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
-			fmt.Printf("[Repository] No se encontraron filas\n")
 			return nil, nil
 		}
+		log.Printf("[Repository] Error en query GetClient: %v", err)
 		return nil, err
 	}
 
-	// Parsear el ID string a uuid.UUID
 	c.ID, err = uuid.Parse(idStr)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing client ID: %w", err)

@@ -3,11 +3,9 @@ import Link from "next/link";
 export default function Hero() {
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-20">
-      {/* Subtle radial glow behind hero */}
       <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-primary/5 blur-3xl" />
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
-        {/* Badge */}
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5">
           <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
           <span className="text-xs font-medium tracking-wide text-primary font-mono uppercase">
@@ -29,15 +27,38 @@ export default function Hero() {
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
           <Link
             href="/onboarding"
-            className="rounded-md bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="group relative h-11 overflow-hidden rounded-md bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Start Monitoring
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              Start Monitoring
+            </span>
+            <span className="absolute inset-0 flex items-center justify-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              Start Monitoring
+            </span>
           </Link>
           <a
             href="#how-it-works"
-            className="group flex items-center gap-2 rounded-md border border-border px-8 py-3 text-sm font-medium text-foreground transition-colors hover:border-muted-foreground"
+            className="group relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-md border border-border px-8 py-3 text-sm font-medium text-foreground transition-colors hover:border-muted-foreground"
           >
-            See How It Works
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+              See How It Works
+            </span>
+            <span className="absolute inset-0 flex items-center justify-center gap-2 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+              See How It Works
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 5v14" />
+                <path d="m19 12-7 7-7-7" />
+              </svg>
+            </span>
             <svg
               width="16"
               height="16"
@@ -55,7 +76,6 @@ export default function Hero() {
           </a>
         </div>
 
-        {/* Terminal preview */}
         <div className="mt-16 w-full max-w-2xl overflow-hidden rounded-lg border border-border bg-card">
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
             <span className="h-3 w-3 rounded-full bg-red-500/70" />

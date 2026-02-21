@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 	models "server/model"
 	"server/service"
@@ -25,14 +24,9 @@ func NewWebSocketController() *WebSocketController {
 }
 
 func (lc *LoginController) GoogleLogin(ctx *gin.Context) {
-	fmt.Println("PROVIDER: ", ctx.Param("provider"))
 	provider := ctx.Param("provider")
-	// Inyectamos el provider en el request
-	//ERROR FIXED: Teniamos que inyectar el provider porque gothic no lo estaba encontrando
-	//en la URL
 	ctx.Request.URL.RawQuery = "provider=" + provider
 	gothic.BeginAuthHandler(ctx.Writer, ctx.Request)
-	// ESTA FUNCION OBTIENE EL NOMBRE DEL PROVEDOR
 }
 
 // el c * authController nos permite identificar a q pertenece la funcion
@@ -88,7 +82,6 @@ func (lc *LoginController) CompleteRegistration(ctx *gin.Context) {
 		return
 	}
 
-	// Obtener userID del JWT
 	userID, exists := ctx.Get("userID")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -101,9 +94,6 @@ func (lc *LoginController) CompleteRegistration(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Printf("[Controller] userID del contexto: '%s'\n", userIDStr)
-	fmt.Printf("[Controller] Longitud del userID: %d\n", len(userIDStr))
-
 	response, err := lc.service.CompleteRegistration(ctx, userIDStr, req.CompanyName, req.WebhookURL)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -114,7 +104,6 @@ func (lc *LoginController) CompleteRegistration(ctx *gin.Context) {
 }
 
 func (lc *LoginController) GetCurrentUser(ctx *gin.Context) {
-	// Obtener userID del JWT
 	userID, exists := ctx.Get("userID")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})

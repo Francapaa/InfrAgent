@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"server/repositories"
 	"server/utils"
@@ -23,22 +23,21 @@ func AuthMiddlewareApiKey() gin.HandlerFunc {
 		apiKey, err := c.Cookie("auth_token")
 
 		if err != nil {
-			fmt.Printf("Error al intentar extraer la cookie %s", err)
+			log.Printf("[AuthMiddleware] Error al extraer cookie: %v", err)
+			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		utils.IsValidAPIKeyMiddleware(apiKey)
 
 		c.Next()
-	} // validamos que venga y que venga en el formato correcto, luego verificamos en el SERVICE QUE EXISTA
-
+	}
 }
 
 // JWTMiddleware valida tokens JWT para autenticación de usuarios
 func JWTMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader, err := c.Cookie("auth_token")
-		fmt.Println("header de autenticacion: ", authHeader)
 		if authHeader == "" || err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
 			c.Abort()

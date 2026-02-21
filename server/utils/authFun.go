@@ -24,10 +24,11 @@ import (
 )
 
 const (
-	key    = "z£=AO#ylytj^j}Un0rI8q;D<7G8e1op"
 	maxAge = 86400 * 30
 	isProd = false
 )
+
+var key []byte
 
 func NewAuth() {
 	err := godotenv.Load()
@@ -37,7 +38,7 @@ func NewAuth() {
 
 	GoogleClientId := os.Getenv("GOOGLE_CLIENT_ID")
 	GoogleClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
-
+	key := os.Getenv("TOKEN_JWT")
 	store := sessions.NewCookieStore([]byte(key))
 	store.MaxAge(maxAge)
 
