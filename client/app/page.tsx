@@ -21,3 +21,6 @@ export default function Home() {
     </main>
   );
 }
+
+
+// aca implementamos todos los componentes para la landing principal. Todavia falta mejorar un poco la ux (añadir color amarillo)
