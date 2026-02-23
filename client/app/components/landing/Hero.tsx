@@ -3,7 +3,9 @@ import Link from "next/link";
 export default function Hero() {
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-20">
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-primary/5 blur-3xl" />
+      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[800px] w-[800px] rounded-full bg-primary/20 blur-3xl" />
+      <div className="pointer-events-none absolute top-1/3 right-1/4 h-[400px] w-[400px] rounded-full bg-yellow-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-1/4 left-1/3 h-[300px] w-[300px] rounded-full bg-yellow-400/5 blur-3xl" />
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5">
@@ -15,7 +17,7 @@ export default function Hero() {
 
         <h1 className="text-balance text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
           Your infrastructure,{" "}
-          <span className="text-primary">self-healing.</span>
+          <span className="text-primary text-yellow-400">self-healing.</span>
         </h1>
 
         <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground md:text-xl">
@@ -29,7 +31,7 @@ export default function Hero() {
             href="/onboarding"
             className="group relative h-11 overflow-hidden rounded-md bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-[150%]">
               Start Monitoring
             </span>
             <span className="absolute inset-0 flex items-center justify-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
@@ -40,7 +42,7 @@ export default function Hero() {
             href="#how-it-works"
             className="group relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-md border border-border px-8 py-3 text-sm font-medium text-foreground transition-colors hover:border-muted-foreground"
           >
-            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-[135%]">
               See How It Works
             </span>
             <span className="absolute inset-0 flex items-center justify-center gap-2 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">

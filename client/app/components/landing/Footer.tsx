@@ -22,8 +22,9 @@ export default function Footer() {
             </svg>
           </div>
           <span className="text-sm font-semibold text-foreground">
-            InfrAgent
+            InfrAgent was developed by
           </span>
+          <a rel="stylesheet" href="https://www.linkedin.com/in/francisco-caparruva-6711a82a2/" className="underline">Francisco Caparruva</a>
         </div>
 
         <div className="flex items-center gap-6">
@@ -74,7 +75,7 @@ export default function Footer() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          {"InfrAgent. All rights reserved."}
+          {"InfrAgent. All rights reserved. 2026"}
         </p>
       </div>
     </footer>

@@ -50,10 +50,7 @@ export default function HowItWorks() {
     >
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-medium tracking-wide text-primary font-mono uppercase">
-            How It Works
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight text-foreground md:text-4xl text-yellow-400">
             From incident to resolution in seconds
           </h2>
           <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
@@ -62,7 +59,7 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div className="mt-16 flex flex-col gap-12 lg:gap-16">
+        <div className="mt-16 flex flex-col gap-12 lg:gap-16 ">
           {steps.map((step, i) => (
             <div
               key={step.number}
@@ -84,7 +81,9 @@ export default function HowItWorks() {
               </div>
 
               {/* Code block */}
-              <div className="w-full flex-1 overflow-hidden rounded-lg border border-border bg-background">
+              <div className="w-full flex-1 overflow-hidden rounded-lg border border-border bg-background
+                       hover:border-yellow-400
+                        hover:shadow-[0_0_20px_rgba(250,204,21,0.3)]">
                 <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
                   <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />

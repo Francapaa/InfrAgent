@@ -29,6 +29,10 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(250, 204, 21, 0.15), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 50%, rgba(250, 204, 21, 0.05), transparent),
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(250, 204, 21, 0.03), transparent);
   }
 }
 

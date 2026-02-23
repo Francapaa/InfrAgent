@@ -70,13 +70,15 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="px-6 py-24 md:py-32">
-      <div className="mx-auto max-w-7xl">
+    <section id="features" className="relative px-6 py-24 md:py-32 overflow-hidden">
+      <div className="pointer-events-none absolute top-0 left-0 h-[500px] w-[500px] rounded-full bg-yellow-500/5 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-yellow-400/3 blur-3xl" />
+      <div className="mx-auto max-w-7xl relative z-10">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-medium tracking-wide text-primary font-mono uppercase">
             Capabilities
           </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight text-foreground md:text-4xl text-yellow-400">
             Everything your infra needs to stay alive
           </h2>
           <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
@@ -89,7 +91,9 @@ export default function Features() {
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="group cursor-pointer rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:-translate-y-1"
+              className="group cursor-pointer rounded-lg border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:-translate-y-1  
+               hover:border-yellow-300
+               hover:shadow-[0_0_20px_rgba(250,204,21,0.3)]"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
                 {feature.icon}

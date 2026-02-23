@@ -7,8 +7,10 @@ const stats = [
 
 export default function Stats() {
   return (
-    <section className="border-y border-border bg-card">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4">
+    <section className="relative border-y border-border bg-card overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-yellow-500/5 to-transparent" />
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-0 h-px w-3/4 bg-gradient-to-r from-transparent via-yellow-500/30 to-transparent" />
+      <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4 relative z-10">
         {stats.map((stat, i) => (
           <div
             key={stat.label}

@@ -2,8 +2,9 @@ import Link from "next/link";
 
 export default function CTA() {
   return (
-    <section className="border-t border-border bg-card px-6 py-24 md:py-32">
-      <div className="mx-auto max-w-3xl text-center">
+    <section className="relative border-t border-border bg-card px-6 py-24 md:py-32 overflow-hidden">
+      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-yellow-500/10 blur-3xl" />
+      <div className="mx-auto max-w-3xl text-center relative z-10">
         <h2 className="text-balance text-3xl font-bold tracking-tight text-foreground md:text-4xl">
           Stop babysitting your servers.
         </h2>
@@ -16,7 +17,7 @@ export default function CTA() {
             href="/onboarding"
             className="group relative h-11 overflow-hidden rounded-md bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-[150%]">
               Get Started for Free
             </span>
             <span className="absolute inset-0 flex items-center justify-center translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
@@ -27,7 +28,7 @@ export default function CTA() {
             href="/login"
             className="group relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-md border border-border px-8 py-3 text-sm font-medium text-foreground transition-colors hover:border-muted-foreground"
           >
-            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+            <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-[150%]">
               Log In to Dashboard
             </span>
             <span className="absolute inset-0 flex items-center justify-center gap-2 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
